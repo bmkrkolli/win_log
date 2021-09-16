@@ -8,6 +8,7 @@
         name: ADWS
         state: restarted
       register: OutputObj
+      ignore_errors: true
     - name: Successful returncode
       include_role:
         name: returncode
