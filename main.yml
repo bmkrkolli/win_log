@@ -3,8 +3,9 @@
   hosts: all
   gather_facts: yes
   tasks:
+  - name: "Service Restart"
     block:
-      - name: "Effective Run the PowerShell script"
+      - name: "Restart Service"
         win_service: 
           name: ADWS
           state: restarted
