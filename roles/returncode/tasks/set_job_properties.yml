@@ -1,0 +1,15 @@
+---
+- name: Set job properties in custom stats
+  run_once: true
+  set_stats:
+    data:
+      job_properties:
+        asset_name: "{{ asset_name | d('unknown') }}"
+        documentation: "{{ documentation | d({}) }}"
+
+- name: Set custom job properties
+  run_once: true
+  set_stats:
+    data:
+      job_properties: "{{ custom_job_properties | d({}) }}"
+  when: custom_job_properties is defined

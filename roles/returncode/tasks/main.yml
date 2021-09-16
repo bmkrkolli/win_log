@@ -1,0 +1,84 @@
+---
+- name: "Generate RC"
+  set_fact:
+    returncode_message: "{{ rc_message|d('') }}"
+    returncode: "{{ '0' if returncode_success else returncode_string }}"
+  vars:
+    returncode_success: "{{ (rc_success|d(false)|bool) or \
+    (rc_support|d('developer') == 0) }}"
+    returncode_support_groups_number: "\
+    {{ returncode_support_groups[rc_support|d('developer')] }}"
+    returncode_rc_groups_number: "\
+    {{ returncode_rc_groups[rc_group|d('framework_playbook')] }}"
+    returncode_rc_number: "{{ rc_number|d('999') }}"
+    returncode_string: "\
+    {{ returncode_support_groups_number }}-\
+    {{ returncode_rc_groups_number }}-\
+    {{ returncode_rc_number }}"
+
+- name: "Log job results - prepare 2 level values"
+  set_fact:
+    job_results: "{{
+    (hostvars[inventory_hostname]['job_results'] | d({})) \
+      | combine({ inventory_hostname: \
+      { action_name_level1_p:\
+      { action_name_level2_p:\
+      ({ action_key_name_p: result_action_value_p }\
+      | combine(message_part, recursive=true)
+      | combine(documentation_part, recursive=true) ) } } }, recursive=true) }}"
+  vars:
+    action_name_level1_p: "{{ action_name_level1 | default('generic') }}"
+    action_name_level2_p: "{{ action_name_level2 | default('generic') }}"
+    action_key_name_p: "{{ action_key_name | default('action_rc') }}"
+    result_action_value_p: "{{ result_action_value | d(returncode) }}"
+    message_part: "{{ { 'message' : rc_message|d('') } if \
+    rc_message is defined else {} }}"
+    documentation_part: "{{ { 'documentation' : documentation|d('') } if \
+    documentation is defined else {} }}"
+  when:
+    - action_name_level1 is defined
+    - action_name_level2 is defined
+
+- name: "Log job results - prepare 1 level values"
+  set_fact:
+    job_results: "{{
+    (hostvars[inventory_hostname]['job_results'] | d({})) \
+      | combine({ inventory_hostname: \
+      { action_name_level1_p:\
+      ({ action_key_name_p: result_action_value_p } \
+      | combine( message_part, recursive=true)
+      | combine(documentation_part, recursive=true) ) } }, recursive=true) }}"
+  vars:
+    action_name_level1_p: "{{ action_name_level1 | default('generic') }}"
+    action_key_name_p: "{{ action_key_name | default('action_rc') }}"
+    result_action_value_p: "{{ result_action_value | d(returncode) }}"
+    message_part: "{{ { 'message' : rc_message|d('') } if \
+    rc_message is defined else {} }}"
+    documentation_part: "{{ { 'documentation' : documentation|d('') } if \
+    documentation is defined else {} }}"
+  when:
+    - action_name_level2 is not defined
+    # - action_name_level1 is defined
+
+# Disabled to make integration with Dashboard easier
+# - name: "Log job results - prepare single rc values"
+#   set_fact:
+#     job_results: "{{
+#     (hostvars[inventory_hostname]['job_results'] | d({})) \
+#       | combine({ inventory_hostname: \
+#       ({ action_key_name_p: result_action_value_p }\
+#       | combine( message_part, recursive=true) ) }, recursive=true) }}"
+#   vars:
+#     action_key_name_p: "{{ action_key_name | default('action_rc') }}"
+#     result_action_value_p: "{{ result_action_value | d(returncode) }}"
+#     message_part: "{{ { 'message' : rc_message|d('') } if \
+#     rc_message is defined else {} }}"
+#   when:
+#     - action_name_level1 is not defined
+#     - action_name_level2 is not defined
+
+- name: "Log job results - set Custom stats"
+  set_stats:
+    data:
+      job_results: "{{ job_results }}"
+  when: store_results_in_custom_stats

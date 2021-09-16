@@ -1,0 +1,200 @@
+---
+- name: Set Defaul facts
+  set_fact:
+    conn_first_jh: false
+    conn_second_jh: false
+    conn_third_jh: false
+    conn_fourth_jh: false
+    conn_fifth_jh: false
+    python_issue: false
+    trace_enabled: "{{ cv_trace_enable | default('false') }}"
+    icmp_count: >-
+      {{ cv_icmp_count | default(3) }}
+    ssh_timeout: >-
+      {{ cv_ssh_timeout | default('5') }}
+    nc_idletimeout: >-
+      {{ cv_nc_idletimeout | default('2') }}
+    ticket_rc: 103
+    ticket_message: >-
+      FAIL-Could not authenticate into EndPoint.
+  
+- name: Setting affected_host
+  set_fact:
+    affected_host: "{{ affected_host| default('localhost') }}"
+  when: hostvars['localhost']['affected_host'] is undefined
+
+- name: Set jumphost facts
+  set_fact:
+    "{{ 'jumphost' ~ (level + 1) ~ '_ip' }}": >-
+      {{ hostvars['localhost']['jump_hosts'][level]['ip'] }}
+    "{{ 'jumphost' ~ (level + 1) ~ '_ssh_user' }}": >-
+      {{ hostvars['localhost']['jump_hosts'][level]['ssh_user'] }}
+    "{{ 'jumphost' ~ (level + 1) ~ '_ssh_port' }}": >-
+      {{ hostvars['localhost']['jump_hosts'][level]['ssh_port'] }}
+    "{{ 'jumphost' ~ (level + 1) ~ '_ssh_private_key' }}": >-
+      {{ hostvars['localhost']['jump_hosts'][level]
+      ['ssh_private_key'] }}
+    "{{ 'jumphost' ~ (level + 1) ~ '_ssh_private_key_passphrase' }}": >-
+      {{ hostvars['localhost']['jump_hosts'][level]
+      ['ssh_private_key_passphrase']|default('') }}
+  loop: "{{ (hostvars['localhost']['jump_hosts'])|default([]) }}"
+  loop_control:
+    index_var: level
+  when: hostvars['localhost']['jump_hosts'] is defined
+
+- name: Default jumphost facts to extra variables
+  set_fact:
+    "{{ 'jumphost' ~ level ~ '_ip' }}": >-
+      {{ vars.get('jh' ~ level ~ '_ip') }}
+    "{{ 'jumphost' ~ level ~ '_ssh_user' }}": >-
+      {{ vars.get('jh' ~ level ~ '_ssh_user') }}
+    "{{ 'jumphost' ~ level ~ '_ssh_port' }}": >-
+      {{ vars.get('jh' ~ level ~ '_ssh_port') }}
+    "{{ 'jumphost' ~ level ~ '_ssh_private_key' }}": >-
+      {{ lookup('vars', 'jh' ~ level ~ '_ssh_private_key') }}
+    "{{ 'jumphost' ~ level ~ '_ssh_private_key_passphrase' }}": >-
+      {{ lookup('vars', 'jh' ~ level ~ '_ssh_private_key_passphrase') }}
+  loop: "{{ range(1, 6)|list }}"
+  loop_control:
+    loop_var: level
+  when:
+  - vars['jumphost' ~ level ~ '_ip'] is undefined
+  - vars['jh' ~ level ~ '_ip'] is defined
+  
+- name: set facts
+  set_fact:
+    host_reachable: false
+    host_exist: true
+  delegate_to: >-
+    {{ hostvars['localhost']['affected_host'] }}
+  delegate_facts: true
+  ignore_unreachable: true
+  ignore_errors: true
+  
+- name: setting module name
+  set_fact:
+    module_name: >-
+      {{ (hostvars[hostvars['localhost']['affected_host']]
+      ['ostype'] != 'windows') | ternary('ping', 'win_ping') }}
+  
+
+- block:
+  - name: >-
+      Validate connection and credentials of
+      {{ hostvars[hostvars['localhost']['affected_host']]
+      ['ostype'] }} endpoint
+    action: "{{ hostvars['localhost']['module_name'] }}"
+    register: ping_result
+    delegate_to: "{{ hostvars['localhost']['affected_host'] }}"
+    delegate_facts: true
+    ignore_errors: true
+    ignore_unreachable: true
+
+  - debug: var=ping_result
+  - block:
+    - name: Validating JH and EP connection
+      include_tasks: JH_EP_Connection_checker.yml
+
+    - name: Set exec parameters
+      set_fact:
+        exec_success: false
+        exec_changed: false
+    when: '"unreachable" in ping_result and ping_result.unreachable'
+    ignore_errors: true
+
+  - name: Set exec parameters
+    set_fact:
+      host_reachable: false
+      ticket_rc: 112
+      python_issue: true
+      ticket_message: >-
+        Fail- Python compatibility/Python interpreter
+        missing failure, {{ ping_result.warnings[0] }}
+    when:
+    - '"warnings" in ping_result'
+    - '"No python interpreters found" in ping_result.warnings[0]'
+    ignore_errors: true
+    
+  - block:
+    - name: setting fact for host reachability
+      set_fact:
+        host_reachable: false
+      delegate_to: >-
+        {{ hostvars['localhost']['affected_host'] }}
+      delegate_facts: true
+      ignore_unreachable: true
+      
+    - name: Set exec parameters
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        ticket_rc: 101
+        ticket_message: >-
+          Fail- Connection Failed, {{ ping_result.msg }}
+    when: 
+    - '"failed" in ping_result and ping_result.failed'
+    - not hostvars['localhost']['python_issue']
+    ignore_errors: true
+    
+  - block:
+    - name: setting fact for host reachability
+      set_fact:
+        host_reachable: true
+      delegate_to: >-
+        {{ hostvars['localhost']['affected_host'] }}
+      delegate_facts: true
+      ignore_unreachable: true
+      
+    - name: Able to reach endpoint
+      set_fact:
+        conn_message: "Endpoint is reachable."
+        run_condition: true
+      delegate_to: >-
+        {{ hostvars['localhost']['affected_host'] }}
+      delegate_facts: true
+      ignore_unreachable: true
+      
+    - name: validating priviledge
+      include_tasks: priv_checker.yml
+    
+    - block:
+      - name: Gathering facts
+        ansible.builtin.setup:
+          gather_subset: >-
+            {{ (hostvars[hostvars['localhost']['affected_host']]
+            ['ostype'] != 'Windows') |
+            ternary('!all,!min,python',
+            '!all,!hardware,!network,!virtual,!ohai,!facter') }}
+        register: fact_gathering
+        delegate_to: >-
+          {{ hostvars['localhost']['affected_host'] }}
+        delegate_facts: true
+        ignore_unreachable: true
+        ignore_errors: true
+        
+      - block:
+        - name: "Gathering facts fails"
+          debug:
+            msg: >-
+              Failed to gather facts for target host.
+              
+        - name: setting fact for host reachability
+          set_fact:
+            host_reachable: false
+          delegate_to: >-
+            {{ hostvars['localhost']['affected_host'] }}
+          delegate_facts: true
+          ignore_unreachable: true
+          
+        - name: "Set exec results for gathering facts failure"
+          set_fact:
+            exec_success: false
+            exec_changed: false
+            exec_rc: 111
+            exec_message: >-
+              Fail- Setup Module failed to gather facts on target host
+        when:
+        - fact_gathering.failed
+
+    when: '"ping" in ping_result and ping_result.ping=="pong"'
+   # ignore_errors: true

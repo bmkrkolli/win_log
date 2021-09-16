@@ -1,0 +1,1464 @@
+- block:
+  - name: Checking network connectivity to first HST jump
+    shell: >-
+      bash -c 'ping -c{{ hostvars['localhost']
+      ['icmp_count'] }} {{ jumphost1_ip }}'
+    register: jmp1conn
+    ignore_errors: true
+  - debug: var=jmp1conn
+  
+  - name: Checking port connectivity to first HST jump
+    shell: >-
+      bash -c 'nc -i {{ hostvars['localhost']
+      ['nc_idletimeout'] }} -v {{ jumphost1_ip }}
+      {{ jumphost1_ssh_port }}'
+    register: jmp1port
+    ignore_errors: true
+    when:
+    - jmp1conn.stdout is defined
+    - '"3 received" in jmp1conn.stdout'
+    
+  - debug: var=jmp1port
+
+  - name: Checking Credential to first HST jump
+    shell: >-
+      bash -c 'time timeout {{ hostvars['localhost']
+      ['ssh_timeout'] }}s ssh -i {{ jumphost1_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+      whoami'
+    register: jmp1cred
+    ignore_errors: true
+    when:
+    - jmp1port.stdout is defined
+    - '"OpenSSH" in jmp1port.stdout'
+  
+
+    
+  - block:      
+    - name: Checking network connectivity JH1 => EP
+      shell: >-
+        bash -c 'ssh -i {{ jumphost1_ssh_private_key }}
+        -oStrictHostKeyChecking=no 
+        -oUserKnownHostsFile=/dev/null
+        -p {{ jumphost1_ssh_port }}
+        {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+        ping -c{{ hostvars['localhost']['icmp_count'] }}
+        {{ hostvars[hostvars['localhost']['affected_host']]
+        ['ipaddress'] }}'
+      register: epconn
+      ignore_errors: true
+    - block:  
+      - name: set_port as per OS
+        set_fact:
+          ep_port: >-
+            {{ (hostvars[hostvars['localhost']['affected_host']]
+            ['ostype'] != 'windows') | ternary('22','5985') }}
+      
+      - name: Checking network port connectivity JH1 => EP
+        shell: >-
+          bash -c 'ssh -i {{ jumphost1_ssh_private_key }}
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -p {{ jumphost1_ssh_port }}
+          {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+          nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+          -v {{ hostvars[hostvars['localhost']['affected_host']]
+          ['ipaddress'] }} {{ hostvars['localhost']['ep_port'] }}'
+        register: epport
+        ignore_errors: true
+      - block:
+        - name: Set RC for EndPoint port issue
+          set_fact:
+            ticket_rc: 109
+            ticket_message: >-
+              FAIL-Could not connect to port 
+              {{ hostvars['localhost']['ep_port'] }} of
+              EndPoint {{ hostvars['localhost']
+              ['affected_host'] }}.
+        when: 
+        - epport.stderr_lines is defined
+        - '"Connected to" not in epport.stderr_lines'
+      when:
+      - epconn.stdout is defined
+      - '"3 received" in epconn.stdout'
+    
+    - block:
+      - block:
+        - debug: var=hostvars['localhost']['trace_enabled']
+        - name: Checking traceroute availability in JH1
+          shell: >-
+            bash -c 'ssh -i {{ jumphost1_ssh_private_key }}
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -p {{ jumphost1_ssh_port }}
+            {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+            which traceroute'
+          register: traceroute_path
+          ignore_errors: true
+        
+        - block:
+          - name: Checking traceroute connectivity JH1 => EP
+            shell: >-
+              bash -c 'ssh -i {{ jumphost1_ssh_private_key }}
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -p {{ jumphost1_ssh_port }}
+              {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+              traceroute
+              {{ hostvars[hostvars['localhost']['affected_host']]
+              ['ipaddress'] }}'
+            register: traceroute_opt
+           
+          - name: Getting traceroute output
+            debug: 
+              var: traceroute_opt.stdout
+            when:
+            - traceroute_opt.stdout is defined
+          when:
+          - traceroute_path.stdout is defined
+          - '"traceroute" in traceroute_path.stdout'
+          ignore_errors: true
+        
+        - name: If traceroute binary not available in JH1
+          debug:
+            msg: >-
+              Traceroure command not found in {{ jumphost1_ip }}
+          when:
+          - '"traceroute" not in traceroute_path.stdout'
+          ignore_errors: true
+        
+        when:
+        - hostvars['localhost']['trace_enabled']
+        ignore_errors: true
+    
+      - name: Set RC for EndPoint connection issue
+        set_fact:
+          ticket_rc: 108
+          ticket_message: >-
+            FAIL-Could not reach to EndPoint
+            {{ hostvars['localhost']['affected_host'] }}.
+      when:
+      - epconn.stdout is defined
+      - '"3 received" not in epconn.stdout'
+      
+    when:
+    - '"sshproxy_1hop" in no_of_hop'
+    #- jumphost2_ip is undefined
+    - jmp1cred.stdout is defined
+    - jumphost1_ssh_user in jmp1cred.stdout
+  
+  - debug: var=jmp1cred
+  
+  - block:
+    - name: Fail to reach first jumphost?
+      set_fact:
+        ticket_rc: 105
+        ticket_message: >-
+          FAIL-Could not reach to jumphost
+          {{ jumphost1_ip }}.
+    when:
+    - jmp1conn.stdout is defined
+    - '"3 received" not in jmp1conn.stdout'
+  
+  - block:
+    - name: Fail to connect ssh port of first jumphost?
+      set_fact:
+        ticket_rc: 106
+        ticket_message: >-
+          FAIL-Could not connect to ssh port of
+          jumphost {{ jumphost1_ip }}.
+    when:
+    - jmp1port.stdout is defined
+    - '"OpenSSH" not in jmp1port.stdout'
+  
+  - block:
+    - name: Fail to authenticate into first jumphost?
+      set_fact:
+        ticket_rc: 107
+        ticket_message: >-
+          FAIL-Could not authenticate into jumphost
+          {{ jumphost1_ip }}.
+    when:
+    - jmp1cred.stdout is defined
+    - jumphost1_ssh_user not in jmp1cred.stdout
+  
+  - name: Success in connection to first jumphost?
+    set_fact:
+      conn_first_jh: true
+    when:
+    - jmp1cred.stdout is defined
+    - jumphost1_ssh_user in jmp1cred.stdout
+    
+  when:
+  - jumphost1_ip is defined
+  - jumphost1_ip |length > 0
+
+
+
+- block:
+  - name: Checking network connectivity to Second HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost1_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+      ping -c{{ hostvars['localhost']['icmp_count'] }}
+      {{ jumphost2_ip }}'
+    register: jmp2conn
+    ignore_errors: true
+  - debug: var=jmp2conn
+  
+  - name: Checking port connectivity to Second HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost1_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}
+      nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+      -v {{ jumphost2_ip }} {{ jumphost2_ssh_port }}'
+    register: jmp2port
+    ignore_errors: true
+    when:
+    - jmp2conn.stdout is defined
+    - '"3 received" in jmp2conn.stdout'
+    
+  - debug: var=jmp2port
+
+  - name: Checking Credential to Second HST jump
+    shell: >-
+      bash -c 'time timeout {{ hostvars['localhost']
+      ['ssh_timeout'] }}s ssh -i {{ jumphost2_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}
+      whoami'
+    register: jmp2cred
+    ignore_errors: true
+    when:
+    - jmp2port.stdout is defined
+    - '"OpenSSH" in jmp2port.stdout'
+
+  - debug: var=jmp2cred
+    
+  - block:
+    - name: Checking network connectivity JH2 => EP
+      shell: >-
+        bash -c 'ssh -i {{ jumphost2_ssh_private_key }}
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }} 
+        -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -p {{ jumphost1_ssh_port }}
+        {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+        -p {{ jumphost2_ssh_port }}
+        {{ jumphost2_ssh_user }}@{{ jumphost2_ip }} 
+        ping -c{{ hostvars['localhost']['icmp_count'] }}
+        {{ hostvars[hostvars['localhost']['affected_host']]
+        ['ipaddress'] }}'
+      register: epconn
+      ignore_errors: true
+      
+    - block:
+      - name: set_port as per OS
+        set_fact:
+          ep_port: >-
+            {{ (hostvars[hostvars['localhost']['affected_host']]
+            ['ostype'] != 'windows') | ternary('22','5985') }}
+     
+      - name: Checking network port connectivity JH2 => EP
+        shell: >-
+          bash -c 'ssh -i {{ jumphost2_ssh_private_key }}
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }}
+          -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -p {{ jumphost1_ssh_port }}
+          {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+          -p {{ jumphost2_ssh_port }}
+          {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}
+          nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+          -v {{ hostvars[hostvars['localhost']['affected_host']]
+          ['ipaddress'] }} {{ hostvars['localhost']['ep_port'] }}'
+        register: epport
+        ignore_errors: true
+        
+      - block:          
+        - name: Set RC for EndPoint port issue
+          set_fact:
+            ticket_rc: 109
+            ticket_message: >-
+              FAIL-Could not connect to port
+              {{ hostvars['localhost']['ep_port'] }}
+              of EndPoint
+              {{ hostvars['localhost']['affected_host'] }}.
+        when: 
+        - epport.stderr_lines is defined
+        - '"Connected to" not in epport.stderr_lines'
+      
+      when:
+      - epconn.stdout is defined
+      - '"3 received" in epconn.stdout'
+        
+    - block:
+      - block:
+        - debug: var=hostvars['localhost']['trace_enabled']
+        - name: Checking traceroute availability in JH2
+          shell: >-
+            bash -c 'ssh -i {{ jumphost2_ssh_private_key }}
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }}
+            -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -p {{ jumphost1_ssh_port }}
+            {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+            -p {{ jumphost2_ssh_port }}
+            {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}
+            which traceroute'
+          register: traceroute_path
+          ignore_errors: true
+        
+        - block:      
+          - name: Checking traceroute connectivity JH2 => EP
+            shell: >-
+              bash -c 'ssh -i {{ jumphost2_ssh_private_key }}
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }}
+              -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -p {{ jumphost1_ssh_port }}
+              {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+              -p {{ jumphost2_ssh_port }}
+              {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}
+              traceroute
+              {{ hostvars[hostvars['localhost']['affected_host']]
+              ['ipaddress'] }}' 
+            register: traceroute_opt
+           
+          - name: Getting traceroute output
+            debug: 
+              var: traceroute_opt.stdout
+            when:
+            - traceroute_opt.stdout is defined
+            
+          when:
+          - traceroute_path.stdout is defined
+          - '"traceroute" in traceroute_path.stdout'
+          ignore_errors: true
+      
+        - name: If traceroute binary not available in JH2
+          debug:
+            msg: >-
+              Traceroure command not found in {{ jumphost2_ip }}
+          when:
+          - '"traceroute" not in traceroute_path.stdout'
+          ignore_errors: true
+        
+        when:
+        - hostvars['localhost']['trace_enabled']
+        ignore_errors: true   
+      
+      - name: Set RC for EndPoint connection issue
+        set_fact:
+          ticket_rc: 108
+          ticket_message: >-
+            FAIL-Could not reach to EndPoint
+            {{ hostvars['localhost']['affected_host'] }}.
+      when:
+      - epconn.stdout is defined
+      - '"3 received" not in epconn.stdout'
+    when:
+    - '"sshproxy_2hop" in no_of_hop'
+    #- jumphost3_ip is undefined
+    - jmp2cred.stdout is defined
+    - jumphost2_ssh_user in jmp2cred.stdout
+    
+  
+  - block:
+    - name: Fail to reach Second jumphost?
+      set_fact:
+        ticket_rc: 105
+        ticket_message: >-
+          FAIL-Could not reach to jumphost {{ jumphost2_ip }}.
+    when:
+    - jmp2conn.stdout is defined
+    - '"3 received" not in jmp2conn.stdout'
+  
+  - block:
+    - name: Fail to connect ssh port of Second jumphost?
+      set_fact:
+        ticket_rc: 106
+        ticket_message: >-
+          FAIL-Could not connect to ssh port of jumphost
+          {{ jumphost2_ip }}.
+    when:
+    - jmp2port.stdout is defined
+    - '"OpenSSH" not in jmp2port.stdout'
+  
+  - block:
+    - name: Fail to authenticate into Second jumphost?
+      set_fact:
+        ticket_rc: 107
+        ticket_message: >-
+          FAIL-Could not authenticate into jumphost
+          {{ jumphost2_ip }}.
+    when:
+    - jmp2cred.stdout is defined
+    - jumphost2_ssh_user not in jmp2cred.stdout
+  
+  - name: Success in connection to second jumphost?
+    set_fact:
+      conn_second_jh: true
+    when:
+    - jmp2cred.stdout is defined
+    - jumphost2_ssh_user in jmp2cred.stdout
+    
+  when:
+  - hostvars['localhost']['conn_first_jh']
+  - '"sshproxy_1hop" not in no_of_hop'
+  - jumphost2_ip is defined
+  - jumphost2_ip |length > 0
+
+
+
+- block:
+  - name: Checking network connectivity to Third HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost2_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}
+      ping -c{{ hostvars['localhost']['icmp_count'] }}
+      {{ jumphost3_ip }}'
+    register: jmp3conn
+    ignore_errors: true
+  - debug: var=jmp3conn
+  
+  - name: Checking port connectivity to Third HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost2_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}
+      nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+      -v {{ jumphost3_ip }} {{ jumphost3_ssh_port }}'
+    register: jmp3port
+    ignore_errors: true
+    when:
+    - jmp3conn.stdout is defined
+    - '"3 received" in jmp3conn.stdout'
+    
+  - debug: var=jmp2port
+
+  - name: Checking Credential to Third HST jump
+    shell: >-
+      bash -c 'time timeout {{ hostvars['localhost']
+      ['ssh_timeout'] }}s ssh -i {{ jumphost3_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -m hmac-sha1
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+      whoami'
+    register: jmp3cred
+    ignore_errors: true
+    when:
+    - jmp3port.stdout is defined
+    - '"OpenSSH" in jmp3port.stdout'
+    
+  - debug: var=jmp3cred
+  
+  - block:
+    - name: Checking network connectivity JH3 => EP
+      shell: >-
+        bash -c 'ssh -i {{ jumphost3_ssh_private_key }}
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+        -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+        -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+        -m hmac-sha1
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -p {{ jumphost1_ssh_port }}
+        {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+        -p {{ jumphost2_ssh_port }}
+        {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+        -p {{ jumphost3_ssh_port }}
+        {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+        ping -c{{ hostvars['localhost']['icmp_count'] }}
+        {{ hostvars[hostvars['localhost']['affected_host']]
+        ['ipaddress'] }}'
+      register: epconn
+      ignore_errors: true
+    - block:  
+      - name: set_port as per OS
+        set_fact:
+          ep_port: >-
+            {{ (hostvars[hostvars['localhost']['affected_host']]
+            ['ostype'] != 'windows') | ternary('22','5985') }}
+   
+      - name: Checking network port connectivity JH3 => EP
+        shell: >-
+          bash -c 'ssh -i {{ jumphost3_ssh_private_key }}
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+          -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+          -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+          -m hmac-sha1 -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -p {{ jumphost1_ssh_port }}
+          {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+          -p {{ jumphost2_ssh_port }}
+          {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+          -p {{ jumphost3_ssh_port }}
+          {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+          nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+          -v {{ hostvars[hostvars['localhost']['affected_host']]
+          ['ipaddress'] }} {{ hostvars['localhost']['ep_port'] }}'
+        register: epport  
+        ignore_errors: true
+      - block:
+        - name: Set RC for EndPoint port issue
+          set_fact:
+            ticket_rc: 109
+            ticket_message: >-
+              FAIL-Could not connect to port 
+              {{ hostvars['localhost']['ep_port'] }} of
+              EndPoint {{ hostvars['localhost']
+              ['affected_host'] }}.
+        when: 
+        - epport.stderr_lines is defined
+        - '"Connected to" not in epport.stderr_lines'   
+    
+      when:
+      - epconn.stdout is defined
+      - '"3 received" in epconn.stdout'
+    
+    - block:
+      - block:
+        - debug: var=hostvars['localhost']['trace_enabled']
+        - name: Checking traceroute availability in JH3
+          shell: >-
+            bash -c 'ssh -i {{ jumphost3_ssh_private_key }}
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+            -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+            -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+            -m hmac-sha1 -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -p {{ jumphost1_ssh_port }}
+            {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+            -p {{ jumphost2_ssh_port }}
+            {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+            -p {{ jumphost3_ssh_port }}
+            {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+            which traceroute'
+          register: traceroute_path
+          ignore_errors: true
+        
+        - block:
+          - name: Checking traceroute connectivity JH3 => EP
+            shell: >-
+              bash -c 'ssh -i {{ jumphost3_ssh_private_key }}
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+              -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+              -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+              -m hmac-sha1 -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -p {{ jumphost1_ssh_port }}
+              {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+              -p {{ jumphost2_ssh_port }}
+              {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+              -p {{ jumphost3_ssh_port }}
+              {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+              traceroute
+              {{ hostvars[hostvars['localhost']['affected_host']]
+              ['ipaddress'] }}'
+            register: traceroute_opt
+           
+          - name: Getting traceroute output
+            debug: 
+              var: traceroute_opt.stdout
+            when:
+            - traceroute_opt.stdout is defined
+          
+          when:
+          - traceroute_path.stdout is defined
+          - '"traceroute" in traceroute_path.stdout'
+          ignore_errors: true
+        
+        - name: If traceroute binary not available in JH3
+          debug:
+            msg: >-
+              Traceroure command not found in {{ jumphost3_ip }}
+          when:
+          - '"traceroute" not in traceroute_path.stdout'
+          ignore_errors: true
+        
+        when:
+        - hostvars['localhost']['trace_enabled']
+        ignore_errors: true
+      
+      - name: Set RC for EndPoint connection issue
+        set_fact:
+          ticket_rc: 108
+          ticket_message: >-
+            FAIL-Could not reach to EndPoint
+            {{ hostvars['localhost']['affected_host'] }}.
+      when:
+      - epconn.stdout is defined
+      - '"3 received" not in epconn.stdout'
+      
+    when:
+    - '"sshproxy_3hop" in no_of_hop'
+    #- jumphost4_ip is undefined
+    - jmp3cred.stdout is defined
+    - jumphost3_ssh_user in jmp3cred.stdout
+  
+  - block:    
+    - name: Fail to reach Third jumphost?
+      set_fact:
+        ticket_rc: 105
+        ticket_message: >-
+          FAIL-Could not reach to jumphost
+          {{ jumphost3_ip }}.
+    when:
+    - jmp3conn.stdout is defined
+    - '"3 received" not in jmp3conn.stdout'
+  
+  - block:
+    - name: Fail to connect ssh port of Third jumphost?
+      set_fact:
+        ticket_rc: 106
+        ticket_message: >-
+          FAIL-Could not connect to ssh port
+          of Infra jumphost {{ jumphost3_ip }}.
+    when:
+    - jmp3port.stdout is defined
+    - '"OpenSSH" not in jmp3port.stdout'
+  
+  - block:
+    - name: Fail to authenticate into Third jumphost?
+      set_fact:
+        ticket_rc: 107
+        ticket_message: >-
+          FAIL-Could not authenticate into jumphost
+          {{ jumphost3_ip }}.
+    when:
+    - jmp3cred.stdout is defined
+    - jumphost3_ssh_user not in jmp3cred.stdout
+
+  - name: Success in connection to Third jumphost?
+    set_fact:
+      conn_third_jh: true
+    when:
+    - jmp3cred.stdout is defined
+    - jumphost3_ssh_user in jmp3cred.stdout
+
+  when:
+  - hostvars['localhost']['conn_second_jh']
+  - '"sshproxy_1hop" not in no_of_hop'
+  - '"sshproxy_2hop" not in no_of_hop'
+  - jumphost3_ip  is defined
+  - jumphost3_ip |length > 0
+
+- block:
+  - name: Checking network connectivity to Fourth HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost3_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -m hmac-sha1
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+      ping -c{{ hostvars['localhost']['icmp_count'] }}
+      {{ jumphost4_ip }}'
+    register: jmp4conn
+    ignore_errors: true
+    
+  - debug: var=jmp4conn
+  
+  - name: Checking port connectivity to Fourth HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost3_ssh_private_key }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -m hmac-sha1
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}
+      nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+      -v {{ jumphost4_ip }} {{ jumphost4_ssh_port }}'
+    register: jmp4port
+    ignore_errors: true
+    when:
+    - jmp4conn.stdout is defined
+    - '"3 received" in jmp4conn.stdout'
+    
+  - debug: var=jmp4port
+
+  - name: Checking Credential to Fourth HST jump
+    shell: >-
+      bash -c 'time timeout {{ hostvars['localhost']
+      ['ssh_timeout'] }}s ssh -i {{ jumphost4_ssh_private_key }}
+      -oPubkeyAuthentication=yes -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+      -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+      -p {{ jumphost4_ssh_port }}
+      {{ jumphost4_ssh_user }}@{{ jumphost4_ip }} whoami'
+    register: jmp4cred
+    ignore_errors: true
+    when:
+    - jmp4port.stdout is defined
+    - '"OpenSSH" in jmp4port.stdout'
+    
+  - debug: var=jmp4cred
+  
+  - block:
+    - name: Checking network connectivity JH4 => EP
+      shell: >-
+        bash -c 'ssh -i {{ jumphost4_ssh_private_key }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+        -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+        -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+        -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -p {{ jumphost1_ssh_port }}
+        {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+        -p {{ jumphost2_ssh_port }}
+        {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+        -p {{ jumphost3_ssh_port }}
+        {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+        -p {{ jumphost4_ssh_port }}
+        {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}
+        ping -c{{ hostvars['localhost']['icmp_count'] }}
+        {{ hostvars[hostvars['localhost']['affected_host']]
+        ['ipaddress'] }}'
+      register: epconn
+      ignore_errors: true
+      
+    - block:
+      - name: set_port as per OS
+        set_fact:
+          ep_port: >-
+            {{ (hostvars[hostvars['localhost']['affected_host']]
+            ['ostype'] != 'windows') | ternary('22','5985') }} 
+   
+      - name: Checking network port connectivity JH4 => EP
+        shell: >-
+          bash -c 'ssh -i {{ jumphost4_ssh_private_key }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+          -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+          -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+          -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -p {{ jumphost1_ssh_port }}
+          {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+          -p {{ jumphost2_ssh_port }}
+          {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+          -p {{ jumphost3_ssh_port }}
+          {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+          -p {{ jumphost4_ssh_port }}
+          {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}
+          nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+          -v {{ hostvars[hostvars['localhost']['affected_host']]
+          ['ipaddress'] }} {{ hostvars['localhost']['ep_port'] }}'
+        register: epport
+        ignore_errors: true
+      - block:
+        - name: Set RC for EndPoint port issue
+          set_fact:
+            ticket_rc: 109
+            ticket_message: >-
+              FAIL-Could not connect to port
+              {{ hostvars['localhost']['ep_port'] }}
+              of EndPoint {{ hostvars['localhost']
+              ['affected_host'] }}.
+        when: 
+        - epport.stderr_lines is defined
+        - '"Connected to" not in epport.stderr_lines'
+      when:
+      - epconn.stdout is defined
+      - '"3 received" in epconn.stdout'
+    
+    - block:
+      - block:
+        - debug: var=hostvars['localhost']['trace_enabled']
+        - name: Checking traceroute availability in JH4
+          shell: >-
+            bash -c 'ssh -i {{ jumphost4_ssh_private_key }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+            -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+            -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+            -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -p {{ jumphost1_ssh_port }}
+            {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+            -p {{ jumphost2_ssh_port }}
+            {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+            -p {{ jumphost3_ssh_port }}
+            {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+            -p {{ jumphost4_ssh_port }}
+            {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}
+            which traceroute'
+          register: traceroute_path
+          ignore_errors: true
+        
+        - block:
+          - name: Checking traceroute connectivity JH4 => EP
+            shell: >-
+              bash -c 'ssh -i {{ jumphost4_ssh_private_key }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+              -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+              -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+              -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -p {{ jumphost1_ssh_port }}
+              {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+              -p {{ jumphost2_ssh_port }}
+              {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+              -p {{ jumphost3_ssh_port }}
+              {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+              -p {{ jumphost4_ssh_port }}
+              {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}
+              traceroute
+              {{ hostvars[hostvars['localhost']['affected_host']]
+              ['ipaddress'] }}'
+            register: traceroute_opt
+           
+          - name: Getting traceroute output
+            debug: 
+              var: traceroute_opt.stdout
+            when:
+            - traceroute_opt.stdout is defined  
+              
+          when:
+          - traceroute_path.stdout is defined
+          - '"traceroute" in traceroute_path.stdout'
+          ignore_errors: true
+        
+        - name: If traceroute binary not available in JH4
+          debug:
+            msg: >-
+              Traceroure command not found in {{ jumphost4_ip }}
+          when:
+          - '"traceroute" not in traceroute_path.stdout'
+          ignore_errors: true
+        
+        when:
+        - hostvars['localhost']['trace_enabled']
+        ignore_errors: true
+      
+      - name: Set RC for EndPoint connection issue
+        set_fact:
+          ticket_rc: 108
+          ticket_message: >-
+            FAIL-Could not reach to EndPoint
+            {{ hostvars['localhost']['affected_host'] }}.
+      when:
+      - epconn.stdout is defined
+      - '"3 received" not in epconn.stdout'
+    when:
+    - '"sshproxy_4hop" in no_of_hop'
+    #- jumphost5_ip is undefined
+    - jmp4cred.stdout is defined
+    - jumphost4_ssh_user in jmp4cred.stdout
+      
+  - block:      
+    - name: Fail to reach Fourth jumphost?
+      set_fact:
+        ticket_rc: 105
+        ticket_message: >-
+          FAIL-Could not reach to jumphost {{ jumphost4_ip }}.
+    when:
+    - jmp4conn.stdout is defined
+    - '"3 received" not in jmp4conn.stdout'
+  
+  - block:
+    - name: Fail to connect ssh port of Fourth jumphost?
+      set_fact:
+        ticket_rc: 106
+        ticket_message: >-
+          FAIL-Could not connect to ssh port of jumphost
+          {{ jumphost4_ip }}.
+    when:
+    - jmp4port.stdout is defined
+    - '"OpenSSH" not in jmp4port.stdout'
+  
+  - block:
+    - name: Fail to authenticate into Fourth jumphost?
+      set_fact:
+        ticket_rc: 107
+        ticket_message: >-
+          FAIL-Could not authenticate into jumphost
+          {{ jumphost4_ip }}.
+    when:
+    - jmp4cred.stdout is defined
+    - jumphost4_ssh_user not in jmp4cred.stdout
+  
+  - name: Success in connection to Fourth jumphost?
+    set_fact:
+      conn_fourth_jh: true
+    when:
+    - jmp4cred.stdout is defined
+    - jumphost4_ssh_user in jmp4cred.stdout
+  when:
+  - hostvars['localhost']['conn_third_jh']
+  - '"sshproxy_1hop" not in no_of_hop'
+  - '"sshproxy_2hop" not in no_of_hop'
+  - '"sshproxy_3hop" not in no_of_hop'
+  - jumphost4_ip  is defined
+  - jumphost4_ip |length > 0
+
+
+- block:
+  - name: Checking network connectivity to Fifth HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost4_ssh_private_key }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+      -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+      -p {{ jumphost4_ssh_port }}
+      {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}
+      ping -c{{ hostvars['localhost']['icmp_count'] }}
+      {{ jumphost5_ip }}'
+    register: jmp5conn
+    ignore_errors: true
+    
+  - debug: var=jmp5conn
+  
+  - name: Checking port connectivity to Fifth HST jump
+    shell: >-
+      bash -c 'ssh -i {{ jumphost4_ssh_private_key }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand="ssh -i {{ jumphost3_ssh_private_key }}
+      -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\\\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}"
+      -p {{ jumphost4_ssh_port }}
+      {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}
+      nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+      -v {{ jumphost5_ip }} {{ jumphost5_ssh_port }}'
+    register: jmp5port
+    ignore_errors: true
+    when:
+    - jmp5conn.stdout is defined
+    - '"3 received" in jmp5conn.stdout'
+    
+  - debug: var=jmp5port
+
+  - name: Checking Credential to Fifth HST jump
+    shell: >-
+      bash -c 'time timeout {{ hostvars['localhost']
+      ['ssh_timeout'] }}s ssh -i {{ jumphost5_ssh_private_key }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null 
+      -oProxyCommand="ssh -i {{ jumphost4_ssh_private_key }}
+      -W {{ jumphost5_ip }}:{{ jumphost5_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\"ssh -i {{ jumphost3_ssh_private_key }}
+      -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\\\"ssh -i {{ jumphost2_ssh_private_key }}
+      -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -oProxyCommand=\\\\\\\"ssh -i {{ jumphost1_ssh_private_key }}
+      -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+      -oPubkeyAuthentication=yes
+      -oStrictHostKeyChecking=no
+      -oUserKnownHostsFile=/dev/null
+      -p {{ jumphost1_ssh_port }}
+      {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\\\\\"
+      -p {{ jumphost2_ssh_port }}
+      {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\\\"
+      -p {{ jumphost3_ssh_port }}
+      {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}\"
+      -p {{ jumphost4_ssh_port }}
+      {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}"
+      -p {{ jumphost5_ssh_port }}
+      {{ jumphost5_ssh_user }}@{{ jumphost5_ip }} whoami'
+    register: jmp5cred
+    ignore_errors: true
+    when:
+    - jmp5port.stdout is defined
+    - '"OpenSSH" in jmp5port.stdout'
+    
+  - debug: var=jmp5cred
+
+  - block:
+    - name: Checking network connectivity JH5 => EP
+      shell: >-
+        bash -c 'ssh -i {{ jumphost5_ssh_private_key }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand="ssh -i {{ jumphost4_ssh_private_key }}
+        -W {{ jumphost5_ip }}:{{ jumphost5_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand=\"ssh -i {{ jumphost3_ssh_private_key }}
+        -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand=\\\"ssh -i {{ jumphost2_ssh_private_key }}
+        -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -oProxyCommand=\\\\\\\"ssh -i {{ jumphost1_ssh_private_key }}
+        -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+        -oPubkeyAuthentication=yes
+        -oStrictHostKeyChecking=no
+        -oUserKnownHostsFile=/dev/null
+        -p {{ jumphost1_ssh_port }}
+        {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\\\\\"
+        -p {{ jumphost2_ssh_port }}
+        {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\\\"
+        -p {{ jumphost3_ssh_port }}
+        {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}\"
+        -p {{ jumphost4_ssh_port }}
+        {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}"
+        -p {{ jumphost5_ssh_port }}
+        {{ jumphost5_ssh_user }}@{{ jumphost5_ip }}
+        ping -c{{ hostvars['localhost']['icmp_count'] }}
+        {{ hostvars[hostvars['localhost']['affected_host']]
+        ['ipaddress'] }}'
+      register: epconn
+      ignore_errors: true
+      
+    - block:
+      - name: set_port as per OS
+        set_fact:
+          ep_port: >-
+            {{ (hostvars[hostvars['localhost']['affected_host']]
+            ['ostype'] != 'windows') | ternary('22','5985') }}
+   
+      - name: Checking network port connectivity JH5 => EP
+        shell: >-
+          bash -c 'ssh -i {{ jumphost5_ssh_private_key }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand="ssh -i {{ jumphost4_ssh_private_key }}
+          -W {{ jumphost5_ip }}:{{ jumphost5_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand=\"ssh -i {{ jumphost3_ssh_private_key }}
+          -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand=\\\"ssh -i {{ jumphost2_ssh_private_key }}
+          -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -oProxyCommand=\\\\\\\"ssh -i {{ jumphost1_ssh_private_key }}
+          -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+          -oPubkeyAuthentication=yes
+          -oStrictHostKeyChecking=no
+          -oUserKnownHostsFile=/dev/null
+          -p {{ jumphost1_ssh_port }}
+          {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\\\\\"
+          -p {{ jumphost2_ssh_port }}
+          {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\\\"
+          -p {{ jumphost3_ssh_port }}
+          {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}\"
+          -p {{ jumphost4_ssh_port }}
+          {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}"
+          -p {{ jumphost5_ssh_port }}
+          {{ jumphost5_ssh_user }}@{{ jumphost5_ip }}
+          nc -i {{ hostvars['localhost']['nc_idletimeout'] }}
+          -v {{ hostvars[hostvars['localhost']['affected_host']]
+          ['ipaddress'] }} {{ hostvars['localhost']['ep_port'] }}'
+        register: epport
+        ignore_errors: true
+      - block:
+        - name: Set RC for EndPoint port issue
+          set_fact:
+            ticket_rc: 109
+            ticket_message: >-
+              FAIL-Could not connect to port
+              {{ hostvars['localhost']['ep_port'] }} of
+              EndPoint {{ hostvars['localhost']
+              ['affected_host'] }}.
+        when: 
+        - epport.stderr_lines is defined
+        - '"Connected to" not in epport.stderr_lines'
+      when:
+      - epconn.stdout is defined
+      - '"3 received" in epconn.stdout'
+      
+    - block:
+      - block:
+        - debug: var=hostvars['localhost']['trace_enabled']
+        - name: Checking traceroute availability in JH5
+          shell: >-
+            bash -c 'ssh -i {{ jumphost5_ssh_private_key }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand="ssh -i {{ jumphost4_ssh_private_key }}
+            -W {{ jumphost5_ip }}:{{ jumphost5_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand=\"ssh -i {{ jumphost3_ssh_private_key }}
+            -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand=\\\"ssh -i {{ jumphost2_ssh_private_key }}
+            -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -oProxyCommand=\\\\\\\"ssh -i {{ jumphost1_ssh_private_key }}
+            -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+            -oPubkeyAuthentication=yes
+            -oStrictHostKeyChecking=no
+            -oUserKnownHostsFile=/dev/null
+            -p {{ jumphost1_ssh_port }}
+            {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\\\\\"
+            -p {{ jumphost2_ssh_port }}
+            {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\\\"
+            -p {{ jumphost3_ssh_port }}
+            {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}\"
+            -p {{ jumphost4_ssh_port }}
+            {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}"
+            -p {{ jumphost5_ssh_port }}
+            {{ jumphost5_ssh_user }}@{{ jumphost5_ip }}
+            which traceroute'
+          register: traceroute_path
+          ignore_errors: true
+
+        - block:
+          - name: Checking traceroute connectivity JH5 => EP
+            shell: >-
+              bash -c 'ssh -i {{ jumphost5_ssh_private_key }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand="ssh -i {{ jumphost4_ssh_private_key }}
+              -W {{ jumphost5_ip }}:{{ jumphost5_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand=\"ssh -i {{ jumphost3_ssh_private_key }}
+              -W {{ jumphost4_ip }}:{{ jumphost4_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand=\\\"ssh -i {{ jumphost2_ssh_private_key }}
+              -W {{ jumphost3_ip }}:{{ jumphost3_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -oProxyCommand=\\\\\\\"ssh -i {{ jumphost1_ssh_private_key }}
+              -W {{ jumphost2_ip }}:{{ jumphost2_ssh_port }}
+              -oPubkeyAuthentication=yes
+              -oStrictHostKeyChecking=no
+              -oUserKnownHostsFile=/dev/null
+              -p {{ jumphost1_ssh_port }}
+              {{ jumphost1_ssh_user }}@{{ jumphost1_ip }}\\\\\\\"
+              -p {{ jumphost2_ssh_port }}
+              {{ jumphost2_ssh_user }}@{{ jumphost2_ip }}\\\"
+              -p {{ jumphost3_ssh_port }}
+              {{ jumphost3_ssh_user }}@{{ jumphost3_ip }}\"
+              -p {{ jumphost4_ssh_port }}
+              {{ jumphost4_ssh_user }}@{{ jumphost4_ip }}"
+              -p {{ jumphost5_ssh_port }}
+              {{ jumphost5_ssh_user }}@{{ jumphost5_ip }}
+              traceroute
+              {{ hostvars[hostvars['localhost']['affected_host']]
+              ['ipaddress'] }}'
+            register: traceroute_opt
+           
+          - name: Getting traceroute output
+            debug: 
+              var: traceroute_opt.stdout
+            when:
+            - traceroute_opt.stdout is defined  
+          when:
+          - traceroute_path.stdout is defined
+          - '"traceroute" in traceroute_path.stdout'
+          ignore_errors: true
+        
+        - name: If traceroute binary not available in JH5
+          debug:
+            msg: >-
+              Traceroure command not found in {{ jumphost5_ip }}
+          when:
+          - '"traceroute" not in traceroute_path.stdout'
+          ignore_errors: true
+        
+        when:
+        - hostvars['localhost']['trace_enabled']
+        ignore_errors: true
+      
+      - name: Set RC for EndPoint connection issue
+        set_fact:
+          ticket_rc: 108
+          ticket_message: >-
+            FAIL-Could not reach to EndPoint
+            {{ hostvars['localhost']['affected_host'] }}.
+      when:
+      - epconn.stdout is defined
+      - '"3 received" not in epconn.stdout'
+    when:
+    #- jumphost6_ip is undefined
+    - '"sshproxy_5hop" in no_of_hop'
+    - jmp5cred.stdout is defined
+    - jumphost5_ssh_user in jmp5cred.stdout
+      
+  - block:      
+    - name: Fail to reach Fifth jumphost?
+      set_fact:
+        ticket_rc: 105
+        ticket_message: >-
+          FAIL-Could not reach to jumphost
+          {{ jumphost5_ip }}.
+    when:
+    - jmp5conn.stdout is defined
+    - '"3 received" not in jmp5conn.stdout'
+  
+  - block:
+    - name: Fail to connect ssh port of Fifth jumphost?
+      set_fact:
+        ticket_rc: 106
+        ticket_message: >-
+          FAIL-Could not connect to ssh port of jumphost
+          {{ jumphost5_ip }}.
+    when:
+    - jmp5port.stdout is defined
+    - '"OpenSSH" not in jmp5port.stdout'
+  
+  - block:
+    - name: Fail to authenticate into Fifth jumphost?
+      set_fact:
+        ticket_rc: 107
+        ticket_message: >-
+          FAIL-Could not authenticate into jumphost
+          {{ jumphost5_ip }}.
+    when:
+    - jmp5cred.stdout is defined
+    - jumphost5_ssh_user not in jmp4cred.stdout
+
+  - name: Success in connection to Fifth jumphost?
+    set_fact:
+      conn_fifth_jh: true
+    when:
+    - jmp5cred.stdout is defined
+    - jumphost5_ssh_user in jmp4cred.stdout
+  when:
+  - hostvars['localhost']['conn_fourth_jh']
+  - '"sshproxy_5hop" in no_of_hop'
+  - jumphost5_ip  is defined
+  - jumphost5_ip |length > 0

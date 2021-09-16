@@ -1,0 +1,55 @@
+---
+# tasks file for ansible-role-connectotion-validator
+- block:
+  - name: Set facts
+    set_fact:
+      isadmin: >-
+        $isadmin = New-Object Security.Principal.WindowsPrincipal(
+        [Security.Principal.WindowsIdentity]::GetCurrent());
+        $isadmin.IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+    delegate_to: "{{ hostvars['localhost']['affected_host'] }}"
+    when:
+    - hostvars[hostvars['localhost']['affected_host']]['ostype']=='windows'
+    delegate_facts: true
+    ignore_errors: true
+    
+  - name: Checking Privilege
+    raw: >-
+      {{ (hostvars[hostvars['localhost']['affected_host']][
+      'ostype'] != 'windows') | ternary('whoami',
+      hostvars[hostvars['localhost']['affected_host']]['isadmin']) }}
+    become: >-
+      {{ (hostvars[hostvars['localhost']['affected_host']]
+      ['ostype'] != 'windows') | ternary('yes', 'no') }}
+    register: priv_result
+    delegate_to: "{{ hostvars['localhost']['affected_host'] }}"
+    delegate_facts: true
+
+  - debug:
+      msg: "User has priviledge access"
+    when:
+    - priv_result.stdout is defined
+    - priv_result.stdout!=""
+    - '"root" in priv_result.stdout or "True" in priv_result.stdout'
+              
+  - block:
+    - debug:
+        msg: "User does not have priviledge access"
+    
+    - name: setting fact for host reachability
+      set_fact:
+        host_reachable: false
+      delegate_to: >-
+        {{ hostvars['localhost']['affected_host'] }}
+      delegate_facts: true
+      ignore_unreachable: true
+          
+    - name: "Setting exec results for priviledge failure"
+      set_fact:
+        ticket_rc: 110
+        ticket_message: >-
+          FAIL-Sudo/Admin escalation failure {{ priv_result.msg }}
+    when: >-
+      priv_result.failed or
+      (priv_result.stdout is defined and priv_result.stdout=="")

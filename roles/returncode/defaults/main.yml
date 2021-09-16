@@ -1,0 +1,17 @@
+---
+# defaults file for ansible_role_returncode
+returncode_support_groups:
+  success: 0
+  account: 1
+  developer: 2
+  undetermined: 3
+
+returncode_rc_groups:
+  connection_issue: 1
+  framework_playbook: 2
+  component_playbook: 3
+  misconfiguration: 4
+  service_issue: 5
+  unsupported_platform: 6
+
+store_results_in_custom_stats: true
