@@ -7,10 +7,6 @@
   tasks:
   - name: "Run the PowerShell script"
     block:
-      - name: Attempting to run powershell code
-        debug:
-          msg: "I execute normally"
-      # This action could fail      
       - name: "Effective Run the PowerShell script"
         win_command: powershell.exe -
         args:
@@ -70,7 +66,13 @@
         copy: 
           content: "{{ OutputObj.stdout_lines | to_nice_json }}" 
           dest: "{{ LogPath }}/{{ ansible_facts.hostname }}.{{ LogFile }}"
-        delegate_to: localhost      
+        delegate_to: localhost
+      - name: Successful returncode
+        include_role:
+          name: returncode
+        vars:
+          rc_number: 0
+          rc_message: "{{ inventory_hostname }} : Success" 
     rescue:
     - name: RETURN CODE GENERATION IN CASE OF FAILURE
       include_role:
