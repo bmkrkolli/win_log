@@ -5,10 +5,6 @@
   vars_files:
     - variables.yml
   tasks:
-  - name: Role to check connectivity to endpoint
-    include_role:
-      name: connection_validator
-
   - name: "Run the PowerShell script"
     block:
       - name: Attempting to run powershell code
