@@ -1,0 +1,97 @@
+---
+- name: "Windows - EvetLog Policy"
+  hosts: windows
+  gather_facts: yes
+  vars_files:
+    - variables.yml
+  tasks:
+  - name: Role ensures that the socks tunnel is setup
+    include_role:
+      name: ansible-role-event-socks-tunnel
+      apply:
+        tags: always
+    vars:
+      acc_id: "{{ blueid_shortcode | default('NA') }}"
+      transaction_id: "{{ tower_job_id }}"
+    when: jh1_ip is defined
+    tags: always
+
+  - name: Role to check connectivity to endpoint
+    include_role:
+      name: connection_validator
+
+  - name: "Run the PowerShell script"
+    block:
+      - name: Attempting to run powershell code
+        debug:
+          msg: "I execute normally"
+      # This action could fail      
+      - name: "Effective Run the PowerShell script"
+        win_command: powershell.exe -
+        args:
+          stdin: 
+            $SysMaxSize = (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\System" `
+            -Name "MaxSize" | select "MaxSize").MaxSize;
+            $SysRetention = (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\System" `
+            -Name "Retention" | select "Retention").Retention;
+            $SysAutobackup= (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\System" `
+            -Name "AutoBackupLogFiles" | select `
+            "AutoBackupLogFiles").AutoBackupLogFiles;
+            $AppMaxSize = (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Application" `
+            -Name "MaxSize" | select "MaxSize").MaxSize;
+            $AppRetention = (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Application" `
+            -Name "Retention" | select "Retention").Retention;
+            $AppAutobackup= (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Application" `
+            -Name "AutoBackupLogFiles" | `
+            select "AutoBackupLogFiles").AutoBackupLogFiles;
+            $SecMaxSize = (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Security" `
+            -Name "MaxSize" | select "MaxSize").MaxSize;
+            $SecRetention = (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Security" `
+            -Name "Retention" | select "Retention").Retention;
+            $SecAutobackup= (Get-ItemProperty -Path `
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Eventlog\Security" `
+            -Name "AutoBackupLogFiles" | select `
+            "AutoBackupLogFiles").AutoBackupLogFiles;
+            $OutputObj = New-Object -TypeName PSobject;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            Sys_MaxSize -Value $SysMaxSize;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            Sys_Retention -Value $SysRetention;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            Sys_AutoBackup -Value $SysAutobackup;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            App_MaxSize -Value $AppMaxSize;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            App_Retention -Value $AppRetention;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            App_AutoBackup -Value $AppAutobackup;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            Sec_MaxSize -Value $SecMaxSize;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            Sec_Retention -Value $SecRetention;
+            $OutputObj | Add-Member -MemberType NoteProperty -Name `
+            Sec_AutoBackup -Value $SecAutobackup;
+            $OutputObj
+        register: OutputObj
+      - name: "Copy out file with result"
+        copy: 
+          content: "{{ OutputObj.stdout_lines | to_nice_json }}" 
+          dest: "{{ LogPath }}/{{ ansible_facts.hostname }}.{{ LogFile }}"
+        delegate_to: localhost      
+    rescue:
+    - name: RETURN CODE GENERATION IN CASE OF FAILURE
+      include_role:
+        name: returncode
+      vars:
+        rc_support: developer
+        rc_group: component_playbook
+        rc_number: 111
+        rc_message: "Error of running powershell: {{ copy_result.stderr }}"

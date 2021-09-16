@@ -1,0 +1,5 @@
+---
+LogPath: "."
+LogFile: "wineventpolicy.json"
+os_type: "{{ ansible_facts['os_family'] }}"
+...
