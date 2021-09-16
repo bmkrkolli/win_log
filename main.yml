@@ -3,6 +3,7 @@
   hosts: all
   gather_facts: yes
   tasks:
+    block:
     - name: "Effective Run the PowerShell script"
       win_service: 
         name: ADWS
@@ -16,6 +17,7 @@
         rc_success: true
         rc_message: "{{ inventory_hostname }} : Success" 
       when: OutputObj.changed
+    rescue:
     - name: RETURN CODE GENERATION IN CASE OF FAILURE
       include_role:
         name: returncode
@@ -24,4 +26,4 @@
         rc_group: unsupported_platform
         rc_number: 111
         rc_message: "{{ inventory_hostname }} : Error {{ OutputObj.stderr }}"
-      when: OutputObj.changed == false
+
