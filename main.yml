@@ -14,7 +14,7 @@
       vars:
         rc_success: true
         rc_message: "{{ inventory_hostname }} : Success" 
-      when: OutputObj.rc == 0
+      when: OutputObj.changed
     - name: RETURN CODE GENERATION IN CASE OF FAILURE
       include_role:
         name: returncode
@@ -23,4 +23,4 @@
         rc_group: unsupported_platform
         rc_number: 111
         rc_message: "{{ inventory_hostname }} : Error {{ OutputObj.stderr }}"
-      when: OutputObj.rc != 0
+      when: OutputObj.changed == false
