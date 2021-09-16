@@ -4,26 +4,25 @@
   gather_facts: yes
   tasks:
     block:
-    - name: "Effective Run the PowerShell script"
-      win_service: 
-        name: ADWS
-        state: restarted
-      register: OutputObj
-      ignore_errors: true
-    - name: Successful returncode
-      include_role:
-        name: returncode
-      vars:
-        rc_success: true
-        rc_message: "{{ inventory_hostname }} : Success" 
-      when: OutputObj.changed
+      - name: "Effective Run the PowerShell script"
+        win_service: 
+          name: ADWS
+          state: restarted
+        register: OutputObj
+        #ignore_errors: true
+      - name: Successful returncode
+        include_role:
+          name: returncode
+        vars:
+          rc_success: true
+          rc_message: "{{ inventory_hostname }} : Success" 
+        when: OutputObj.changed
     rescue:
-    - name: RETURN CODE GENERATION IN CASE OF FAILURE
-      include_role:
-        name: returncode
-      vars:
-        rc_support: undetermined
-        rc_group: unsupported_platform
-        rc_number: 111
-        rc_message: "{{ inventory_hostname }} : Error {{ OutputObj.stderr }}"
-
+      - name: RETURN CODE GENERATION IN CASE OF FAILURE
+        include_role:
+          name: returncode
+        vars:
+          rc_support: undetermined
+          rc_group: unsupported_platform
+          rc_number: 111
+          rc_message: "{{ inventory_hostname }} : Error {{ OutputObj.stderr }}"
