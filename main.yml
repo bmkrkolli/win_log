@@ -1,6 +1,5 @@
 ---
-- name: "Windows - EvetLog Policy"
-  hosts: all
+- hosts: all
   gather_facts: yes
   tasks:
   - name: "Service Restart"
