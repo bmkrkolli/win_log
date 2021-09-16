@@ -1,0 +1,8 @@
+# Global role to generate return code
+- name: returncode
+  src: git+https://github.com/bmkrkolli/returncode.git
+  version: main
+# Global role to check connectivity to endpoints
+- name: connection_validator
+  src: git+https://github.com/bmkrkolli/connection_validator.git
+  version: main

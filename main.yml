@@ -5,17 +5,6 @@
   vars_files:
     - variables.yml
   tasks:
-  - name: Role ensures that the socks tunnel is setup
-    include_role:
-      name: ansible-role-event-socks-tunnel
-      apply:
-        tags: always
-    vars:
-      acc_id: "{{ blueid_shortcode | default('NA') }}"
-      transaction_id: "{{ tower_job_id }}"
-    when: jh1_ip is defined
-    tags: always
-
   - name: Role to check connectivity to endpoint
     include_role:
       name: connection_validator
