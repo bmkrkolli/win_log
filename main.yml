@@ -6,7 +6,7 @@
     block:
       - name: "Restart Service"
         win_service: 
-          name: ADWS
+          name: AWS
           state: restarted
         register: OutputObj
         #ignore_errors: true
