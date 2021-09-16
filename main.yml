@@ -26,4 +26,4 @@
           rc_support: undetermined
           rc_group: unsupported_platform
           rc_number: 111
-          rc_message: "{{ inventory_hostname }} : Error {{ OutputObj.stderr }}"
+          rc_message: "{{ inventory_hostname }} : Error {{ OutputObj }}"
