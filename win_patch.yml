@@ -60,7 +60,8 @@
           register: wsusupdates
 
         - name: End Time
-          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; Write-Host "{{ inventory_hostname }} :" $tt.TotalHours;
+          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; Write-Host $tt.TotalHours "hours on {{ inventory_hostname }}";
+          register: tt
           changed_when: false
 
         - name: No Patches found
@@ -70,7 +71,7 @@
             rc_support: account
             rc_group: misconfiguration
             rc_number: 100
-            rc_message: "{{ inventory_hostname }} : No Patches Found "
+            rc_message: "{{ inventory_hostname }} : No Patches Found in {{ tt.stdout }}"
           when: wsusupdates.found_update_count == 0
 
         - name: Successfully installed patches
@@ -78,7 +79,7 @@
             name: returncode
           vars:
             rc_success: true
-            rc_message: "{{ inventory_hostname }} : Successfully Installed Patches {{ wsusupdates }}"
+            rc_message: "{{ inventory_hostname }} : Successfully Installed all Patches {{ wsusupdates }} in {{ tt.stdout }}"
           when: 
             - wsusupdates.found_update_count != 0
             - wsusupdates.found_update_count == wsusupdates.installed_update_count
