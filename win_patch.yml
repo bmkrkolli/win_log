@@ -42,7 +42,7 @@
             state: restarted
 
         - name: Start Time
-          win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} started at " $dt;
+          win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} started at" $dt;
 
         - name: Installing Windows Patches
           win_updates:
@@ -54,7 +54,7 @@
             - UpdateRollups
             - ServicePacks
             - FeaturePacks
-            server_selection: managed_server 
+            server_selection: windows_update 
             state: installed
             reboot: no
             log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
@@ -66,7 +66,7 @@
           become_user: SYSTEM
 
         - name: End Time
-          win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} finished by " $dt;
+          win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} finished by" $dt;
 
       rescue:
         - name: RETURN CODE GENERATION IN CASE OF FAILURE
