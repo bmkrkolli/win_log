@@ -57,7 +57,7 @@
           register: wsusupdates
 
         - name: End Time
-          win_shell: $tt=(get-date -UFormat "%Y-%m-%d %H:%M:%S") - {{ sdt.stdout | from_json }};$tt.TotalHours;
+          win_shell: $tt=(get-date -UFormat "%Y-%m-%d %H:%M:%S") - [datetime]"{{ sdt.stdout | from_json }}";$tt.TotalHours;
 
       rescue:
         - name: RETURN CODE GENERATION IN CASE OF FAILURE
