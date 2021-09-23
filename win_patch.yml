@@ -35,7 +35,7 @@
         - name: Reboot before installation
           win_reboot:
             pre_reboot_delay: 120
-            reboot_timeout: 600
+            reboot_timeout: 300
             post_reboot_delay: 120
 
         - name: Start Time
@@ -55,7 +55,7 @@
             - FeaturePacks
             server_selection: windows_update 
             state: installed
-            reboot: yes
+            reboot: no
             log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
           register: wsusupdates
 
@@ -74,6 +74,15 @@
             rc_message: "{{ inventory_hostname }} : No Patches Found in {{ tt.stdout }}"
           when: wsusupdates.found_update_count == 0
 
+        - name: Reboot before installation
+          win_reboot:
+            pre_reboot_delay: 120
+            reboot_timeout: 900
+            post_reboot_delay: 120
+          when: 
+            - wsusupdates.found_update_count != 0
+            - wsusupdates.found_update_count == wsusupdates.installed_update_count
+
         - name: Successfully installed patches
           include_role:
             name: returncode
@@ -84,6 +93,18 @@
             - wsusupdates.found_update_count != 0
             - wsusupdates.found_update_count == wsusupdates.installed_update_count
 
+        - name: Successfully installed only few patches
+          include_role:
+            name: returncode
+          vars:
+            rc_support: account
+            rc_group: misconfiguration
+            rc_number: 101
+            rc_message: "{{ inventory_hostname }} : Successfully Installed only few Patches {{ wsusupdates }} in {{ tt.stdout }}"
+          when: 
+            - wsusupdates.found_update_count != 0
+            - wsusupdates.found_update_count > wsusupdates.installed_update_count
+
       rescue:
         - name: failed
           include_role:
@@ -91,5 +112,5 @@
           vars:
             rc_support: undetermined
             rc_group: unsupported_platform
-            rc_number: 111
+            rc_number: 102
             rc_message: "{{ inventory_hostname }} : Error {{ wsusupdates }}"
