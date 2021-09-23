@@ -37,7 +37,8 @@
             post_reboot_delay: 120
 
         - name: Start Time
-          win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} started at" $dt;
+          win_shell: get-date -UFormat "%Y-%m-%d %H:%M:%S" | ConvertTo-JSON
+          register: sdt
 
         - name: Installing Windows Patches
           win_updates:
@@ -50,18 +51,13 @@
             - ServicePacks
             - FeaturePacks
             server_selection: windows_update 
-            state: downloaded
+            state: installed
             reboot: no
             log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
-          async: 1200
-          poll: 30
           register: wsusupdates
-          become: yes
-          become_method: runas
-          become_user: SYSTEM
 
         - name: End Time
-          win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} finished by" $dt;
+          win_shell: $tt=(get-date -UFormat "%Y-%m-%d %H:%M:%S") - {{ sdt.stdout | from_json }};$tt.TotalHours;
 
       rescue:
         - name: RETURN CODE GENERATION IN CASE OF FAILURE
