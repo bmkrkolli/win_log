@@ -37,7 +37,7 @@
             post_reboot_delay: 120
 
         - name: Start Time
-          win_shell: get-date -UFormat "%Y-%m-%d %H:%M:%S" | ConvertTo-JSON
+          win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
           register: sdt
 
         - name: Installing Windows Patches
@@ -57,7 +57,7 @@
           register: wsusupdates
 
         - name: End Time
-          win_shell: $tt=(get-date -UFormat "%Y-%m-%d %H:%M:%S") - [datetime]"{{ sdt.stdout | from_json }}";$tt.TotalHours;
+          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}";$tt.TotalHours;
 
       rescue:
         - name: RETURN CODE GENERATION IN CASE OF FAILURE
