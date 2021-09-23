@@ -42,7 +42,8 @@
             state: restarted
 
         - name: Start Time
-          win_shell: "On {{ inventory_hostname }} started at " get-date -UFormat "%Y-%m-%d %H:%M:%S"
+          win_shell: >-
+            "On {{ inventory_hostname }} started at " get-date -UFormat "%Y-%m-%d %H:%M:%S"
 
         - name: Installing Windows Patches
           win_updates:
@@ -66,7 +67,8 @@
           become_user: SYSTEM
 
         - name: End Time
-          win_shell: "On {{ inventory_hostname }} finished by " get-date -UFormat "%Y-%m-%d %H:%M:%S"
+          win_shell: >-
+            "On {{ inventory_hostname }} finished by " get-date -UFormat "%Y-%m-%d %H:%M:%S"
 
       rescue:
         - name: RETURN CODE GENERATION IN CASE OF FAILURE
