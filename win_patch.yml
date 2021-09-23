@@ -13,12 +13,14 @@
           win_shell: |-
             $c=(Get-WMIObject Win32_LogicalDisk | ?{$_.DriveType -eq 3 -and $_.Name -eq 'C:'} | Select-Object @{n='FreeSpace';e={"{0:n2}" -f ($_.freespace/1gb)}}).FreeSpace | ConvertTo-JSON
             $c
-          register: spaceC
+          register: freespace
+          changed_when: false
       
         - name: failing execution if c drive is less than 4GB
           set_fact:
-            cspaces: "{{ spaceC.stdout | from_json }}"
-          failed_when: cspaces|int <= 4
+            cspace: "{{ freespace.stdout | from_json }}"
+          failed_when: cspace|int <= 4
+          changed_when: false
 
         - name: Create directory structure
           win_file:
@@ -39,17 +41,18 @@
         - name: Start Time
           win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
           register: sdt
+          changed_when: false
 
         - name: Installing Windows Patches
           win_updates:
             category_names:
-            - CriticalUpdates
-            - DefinitionUpdates
-            - SecurityUpdates
-            - Updates
-            - UpdateRollups
-            - ServicePacks
-            - FeaturePacks
+              - CriticalUpdates
+              - DefinitionUpdates
+              - SecurityUpdates
+              - Updates
+              - UpdateRollups
+              - ServicePacks
+              - FeaturePacks
             server_selection: windows_update 
             state: installed
             reboot: no
@@ -57,7 +60,17 @@
           register: wsusupdates
 
         - name: End Time
-          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}";$tt.TotalHours;
+          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; "{{ inventory_hostname }} :" $tt.TotalHours;
+          changed_when: false
+
+        - name: No Patches found
+          include_role:
+            name: returncode
+          vars:
+            rc_support: undetermined
+            rc_group: unsupported_platform
+            rc_number: 111
+            rc_message: "{{ inventory_hostname }} : No Patches Pending {{ wsusupdates }}"
 
       rescue:
         - name: RETURN CODE GENERATION IN CASE OF FAILURE
