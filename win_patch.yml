@@ -44,6 +44,12 @@
         - name: Start Time
           win_shell: $dt=get-date -UFormat "%Y-%m-%d %H:%M:%S";Write-Host "On {{ inventory_hostname }} started at" $dt;
 
+        - name: Reboot before installation
+          win_reboot:
+            pre_reboot_delay: 120
+            reboot_timeout: 240
+            post_reboot_delay: 120
+
         - name: Installing Windows Patches
           win_updates:
             category_names:
