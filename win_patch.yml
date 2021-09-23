@@ -71,7 +71,7 @@
             rc_group: noaction
             rc_number: 100
             rc_message: "{{ inventory_hostname }} : No Patches Found {{ wsusupdates }}"
-          when: wsusupdates.found_update_count == "0"
+          when: wsusupdates.found_update_count = "0"
 
         - name: Successfully installed patches
           include_role:
