@@ -63,6 +63,9 @@
           win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; Write-Host "{{ inventory_hostname }} :" $tt.TotalHours;
           changed_when: false
 
+        - debug: 
+            msg: "{{ wsusupdates.found_update_count }}"
+
         - name: No Patches found
           include_role:
             name: returncode
@@ -71,7 +74,7 @@
             rc_group: noaction
             rc_number: 100
             rc_message: "{{ inventory_hostname }} : No Patches Found {{ wsusupdates }}"
-          when: wsusupdates.found_update_count|int == 0 
+          when: wsusupdates.found_update_count|int == 0
 
         - name: Successfully installed patches
           include_role:
