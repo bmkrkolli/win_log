@@ -46,13 +46,13 @@
         - name: Installing Windows Patches
           win_updates:
             category_names:
-              - CriticalUpdates
-              - DefinitionUpdates
-              - SecurityUpdates
-              - Updates
-              - UpdateRollups
-              - ServicePacks
-              - FeaturePacks
+            - CriticalUpdates
+            - DefinitionUpdates
+            - SecurityUpdates
+            - Updates
+            - UpdateRollups
+            - ServicePacks
+            - FeaturePacks
             server_selection: windows_update 
             state: installed
             reboot: no
@@ -60,7 +60,7 @@
           register: wsusupdates
 
         - name: End Time
-          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; "{{ inventory_hostname }} :" $tt.TotalHours;
+          win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; Write-Host "{{ inventory_hostname }} :" $tt.TotalHours;
           changed_when: false
 
         - name: No Patches found
