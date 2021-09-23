@@ -1,0 +1,79 @@
+- hosts: all:!localhost
+  gather_facts: false
+  strategy: free
+
+  tasks:
+    - name: Starting block to make sure endpoint reboot at the end of play
+      block:
+        - name: Find the OS version
+          setup:
+            gather_subset: min
+
+        - name: checking C drive space
+          win_shell: |-
+            $c=(Get-WMIObject Win32_LogicalDisk | ?{$_.DriveType -eq 3 -and $_.Name -eq 'C:'} | Select-Object @{n='FreeSpace';e={"{0:n2}" -f ($_.freespace/1gb)}}).FreeSpace | ConvertTo-JSON
+            $c
+          register: spaceC
+      
+        - name: failing execution if c drive is less than 4GB
+          set_fact:
+            cspaces: "{{ spaceC.stdout | from_json }}"
+          failed_when: cspaces|int <= 4
+
+        - name: Create directory structure
+          win_file:
+            path: C:\Temp\ansible_win_patching
+            state: directory
+    
+        - name: Create patching log file
+          win_file:
+            path: C:\Temp\ansible_win_patching\ansible_patching.txt
+            state: touch
+
+        - name: Restart BitsService
+          win_service:
+            name: bits
+            state: restarted
+
+        - name: Restart Windows Update Service
+          win_service:
+            name: wuauserv
+            start_mode: auto
+            state: restarted
+
+        - name: Start Time
+          win_shell: "On {{ inventory_hostname }} started at " get-date -UFormat "%Y-%m-%d %H:%M:%S"
+
+        - name: Installing Windows Patches
+          win_updates:
+            category_names:
+            - CriticalUpdates
+            - DefinitionUpdates
+            - SecurityUpdates
+            - Updates
+            - UpdateRollups
+            - ServicePacks
+            - FeaturePacks
+            server_selection: managed_server 
+            state: installed
+            reboot: no
+            log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
+          async: 300
+          poll: 30
+          register: wsusupdates
+          become: yes
+          become_method: runas
+          become_user: SYSTEM
+
+        - name: End Time
+          win_shell: "On {{ inventory_hostname }} finished by " get-date -UFormat "%Y-%m-%d %H:%M:%S"
+
+      rescue:
+        - name: RETURN CODE GENERATION IN CASE OF FAILURE
+          include_role:
+            name: returncode
+          vars:
+            rc_support: undetermined
+            rc_group: unsupported_platform
+            rc_number: 111
+            rc_message: "{{ inventory_hostname }} : Error {{ wsusupdates }}"
