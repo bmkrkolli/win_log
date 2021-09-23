@@ -55,7 +55,7 @@
             - ServicePacks
             - FeaturePacks
             server_selection: windows_update 
-            state: installed
+            state: downloaded
             reboot: no
             log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
           async: 300
