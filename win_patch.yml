@@ -32,11 +32,11 @@
             path: C:\Temp\ansible_win_patching\ansible_patching.txt
             state: touch
 
-        - name: Reboot before installation
-          win_reboot:
-            pre_reboot_delay: 120
-            reboot_timeout: 600
-            post_reboot_delay: 120
+#        - name: Reboot before installation
+#          win_reboot:
+#            pre_reboot_delay: 120
+#            reboot_timeout: 600
+#            post_reboot_delay: 120
 
         - name: Start Time
           win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
@@ -71,7 +71,7 @@
             rc_group: noaction
             rc_number: 100
             rc_message: "{{ inventory_hostname }} : No Patches Found "
-          when: wsusupdates.found_update_count = 0
+          when: wsusupdates.found_update_count == 0
 
         - name: Successfully installed patches
           include_role:
