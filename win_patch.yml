@@ -47,7 +47,7 @@
         - name: Reboot before installation
           win_reboot:
             pre_reboot_delay: 120
-            reboot_timeout: 240
+            reboot_timeout: 600
             post_reboot_delay: 120
 
         - name: Installing Windows Patches
@@ -64,7 +64,7 @@
             state: downloaded
             reboot: no
             log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
-          async: 300
+          async: 1200
           poll: 30
           register: wsusupdates
           become: yes
