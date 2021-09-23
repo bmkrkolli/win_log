@@ -74,7 +74,7 @@
             rc_message: "{{ inventory_hostname }} : No Patches Found in {{ tt.stdout }}"
           when: wsusupdates.found_update_count == 0
 
-        - name: Reboot before installation
+        - name: Reboot after installation
           win_reboot:
             pre_reboot_delay: 120
             reboot_timeout: 900
