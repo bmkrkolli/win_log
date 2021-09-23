@@ -67,13 +67,22 @@
           include_role:
             name: returncode
           vars:
-            rc_support: undetermined
-            rc_group: unsupported_platform
-            rc_number: 111
-            rc_message: "{{ inventory_hostname }} : No Patches Pending {{ wsusupdates }}"
+            rc_support: account
+            rc_group: noaction
+            rc_number: 100
+            rc_message: "{{ inventory_hostname }} : No Patches Found {{ wsusupdates }}"
+          when: wsusupdates.found_update_count|int == 0 
+
+        - name: Successfully installed patches
+          include_role:
+            name: returncode
+          vars:
+            rc_success: true
+            rc_message: "{{ inventory_hostname }} : Successfully Installed Patches {{ wsusupdates }}"
+          when: wsusupdates.found_update_count|int != 0 and wsusupdates.found_update_count|int == wsusupdates.installed_update_count|int
 
       rescue:
-        - name: RETURN CODE GENERATION IN CASE OF FAILURE
+        - name: failed
           include_role:
             name: returncode
           vars:
