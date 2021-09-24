@@ -32,14 +32,14 @@
             path: C:\Temp\ansible_win_patching\ansible_patching.txt
             state: touch
 
-        - name: Reboot before installation
-          win_reboot:
-            pre_reboot_delay: 120
-            reboot_timeout: 300
-            post_reboot_delay: 120
+#        - name: Reboot before installation
+#          win_reboot:
+#            pre_reboot_delay: 120
+#            reboot_timeout: 300
+#            post_reboot_delay: 120
 
         - name: Last Search and Installation Date
-          win_shell: (New-Object -ComObject Microsoft.Update.AutoUpdate).Results();
+          win_shell: (New-Object -ComObject Microsoft.Update.AutoUpdate).Results() | fl;
           register: lsdt
           changed_when: false
 
@@ -47,7 +47,7 @@
           win_shell: >-
             (New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow();
             $ses=New-Object -ComObject 'Microsoft.Update.Session';
-            srch = $ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
+            $srch = $ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
             $result.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;
           register: srch
           changed_when: false
