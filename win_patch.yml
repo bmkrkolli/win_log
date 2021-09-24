@@ -38,6 +38,31 @@
             reboot_timeout: 300
             post_reboot_delay: 120
 
+        - name: Last Search and Installation Date
+          win_shell: (New-Object -ComObject Microsoft.Update.AutoUpdate).Results();
+          register: lsdt
+          changed_when: false
+
+        - name: Search for Updates
+          win_shell: >-
+            (New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow();
+            $ses=New-Object -ComObject 'Microsoft.Update.Session';
+            srch = $ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
+            $result.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;
+          register: srch
+          changed_when: false
+
+        - name: Download Updates if Not Downloaded
+          win_shell: >-
+            $ses=New-Object -ComObject 'Microsoft.Update.Session';
+            $srch = $ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
+            $dld=New-Object -ComObject 'Microsoft.Update.UpdateColl';
+            foreach ($pf in $result.Updates){if(!($pf.IsDownloaded)){$dld.Add($pf) | Out-Null}};
+            If($dld.Count > 0){$dldr = $ses.CreateUpdateDownloader();$dldr.Updates = $dld;
+            $dldr.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory; 
+            $dldop = $dldr.Download(); $dldop;};
+          register: dldr
+
         - name: Start Time
           win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
           register: sdt
