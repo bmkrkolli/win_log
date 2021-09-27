@@ -47,7 +47,7 @@
         exec_rc: 3003
         exec_message: "{{ service_name }} service not found on {{ inventory_hostname }}"
       when: 
-        - ansible_facts.services[service_info] is undefined
+        - service_name not in ansible_facts.services
         - exec_rc != 3001 and exec_rc != 3002
 
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
@@ -58,7 +58,7 @@
       ignore_errors: true
       become: yes
       when: 
-        - ansible_facts.services[service_info] is defined
+        - service_name is in ansible_facts.services
         - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
     - name: Set facts on error
