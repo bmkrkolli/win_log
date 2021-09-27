@@ -35,11 +35,6 @@
       no_log: true
       when: exec_rc != 3001 and exec_rc != 3002
 
-    - name: Check if Service Exists
-      stat: path=/etc/init.d/{{service_name}}
-      register: service_status
-      when: exec_rc != 3001 and exec_rc != 3002
-
     - name: Set facts on error - service not found
       set_fact:
         exec_success: false
@@ -47,7 +42,7 @@
         exec_rc: 3003
         exec_message: "{{ service_name }} service not found on {{ inventory_hostname }}"
       when: 
-        - not service_status.stat.exists
+        - ansible_facts.services not contains service_name
         - exec_rc != 3001 and exec_rc != 3002
 
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
@@ -58,7 +53,7 @@
       ignore_errors: true
       become: yes
       when: 
-        - service_status.stat.exists
+        - ansible_facts.services contains service_name
         - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
     - name: Set facts on error
