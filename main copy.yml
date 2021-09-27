@@ -4,7 +4,7 @@
   tasks:
     - name: populate service facts
       service_facts:
-      no_log: true
+
     - name: "Restart Service"
       service: 
         name: "{{ service_name }}"
