@@ -24,7 +24,7 @@
         exec_success: false
         exec_changed: false
         exec_rc: 3002
-        exec_message: "affected_action unknown. It should restart or reboot"
+        exec_message: "affected_action {{ affected_action | upper }} unknown. It should restart or reboot"
       when: 
         - affected_action is defined
         - affected_action | upper != 'RESTART' or affected_action | upper != 'REBOOT'
