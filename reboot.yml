@@ -33,8 +33,9 @@
       debug:
         msg:
           - "*********************************************************************"
-          - "affected_action: {{ affected_action | upper }} on {{ affected_host }}"
+          - "affected_action: {{ affected_action | upper }} on {{ inventory_hostname }}"
           - "*********************************************************************"
+        when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Perform Server Restart
       block:
@@ -64,7 +65,7 @@
             exec_success: false
             exec_changed: false
             exec_rc: 1
-            exec_message: "Failed to restart Linux server {{ affected_host }}."
+            exec_message: "Failed to restart Linux server {{ inventory_hostname }}."
             exec_automation: "sra_restart_linux"
           when: not sra_reboot_r.rebooted or uptime_val | int > 1800
 
@@ -73,7 +74,7 @@
             exec_success: true
             exec_changed: true
             exec_rc: 0
-            exec_message: "Linux server {{ affected_hots }} successfully restarted. 
+            exec_message: "Linux server {{ inventory_hostname }} successfully restarted. 
              Server uptime: {{ uptime_val }} seconds."
             exec_automation: "sra_restart_linux"
           when: 
