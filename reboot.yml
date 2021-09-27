@@ -78,7 +78,7 @@
              Server uptime: {{ uptime_val }} seconds."
             exec_automation: "sra_restart_linux"
           when: 
-            - uptime_val | int < 1800 or uptime_val | int == 1800
+            - uptime_val | int <= 1800
             - sra_reboot_r.rebooted
       when: exec_rc != 3001 and exec_rc != 3002
 
