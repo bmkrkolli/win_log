@@ -37,7 +37,9 @@
 
     - name: Populate service facts
       debug:
-        msg: "{{ ansible_facts | to_json | from_json | json_query('services[?starts_with(name,service_name)]') }}"
+        msg: "{{ ansible_facts | to_json | from_json | json_query(qry) }}"
+      vars:
+        qry: "services[?starts_with(name,'{{ service_name }}')]"
       when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Set facts on error - service not found
