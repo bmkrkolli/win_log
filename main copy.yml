@@ -7,3 +7,4 @@
         name: "{{ service_name }}"
         state: restarted
       register: status
+      become: yes
