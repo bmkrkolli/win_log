@@ -4,5 +4,6 @@
   tasks:
     - name: "Restart Service"
       service: 
-        name: zabbix-service
+        name: adws
+        state: restarted
       register: status
