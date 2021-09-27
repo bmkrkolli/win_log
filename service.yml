@@ -35,6 +35,11 @@
       no_log: true
       when: exec_rc != 3001 and exec_rc != 3002
 
+    - name: service info
+      set_fact:
+        service_info: "{{ service_name }}.service"
+      when: exec_rc != 3001 and exec_rc != 3002
+
     - name: Set facts on error - service not found
       set_fact:
         exec_success: false
