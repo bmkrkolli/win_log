@@ -36,8 +36,8 @@
       when: exec_rc != 3001 and exec_rc != 3002
 
     - name: service info
-      set_fact:
-        service_info: "{{ service_name }}.service"
+      debug:
+        msg: ansible_facts.services.*.[?(@name conatins service_name)]
       when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Set facts on error - service not found
@@ -47,7 +47,7 @@
         exec_rc: 3003
         exec_message: "{{ service_name }} service not found on {{ inventory_hostname }}"
       when: 
-        - service_name not in ansible_facts.services
+        - ansible_facts.services.*.[?(@name conatins service_name)]
         - exec_rc != 3001 and exec_rc != 3002
 
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
@@ -58,7 +58,7 @@
       ignore_errors: true
       become: yes
       when: 
-        - service_name is in ansible_facts.services
+        - ansible_facts.services[service_name] is defined
         - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
     - name: Set facts on error
