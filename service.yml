@@ -16,13 +16,8 @@
         exec_success: false
         exec_changed: false
         exec_rc: 3001
-        exec_message: "{{ exec_message|default('') }}{{ item.key }} variable is 
-         empty"
-      with_dict:
-        - {service_name: "{{ service_name }}"}
-        - {service_action: "{{ service_action }}"}
-      when: not item.value
-      ignore_errors: true
+        exec_message: "service_name or service_action variable is empty"
+      when: service_name is undefined or service_action is undefined      
 
     - name: Set facts on error - invalid action
       set_fact:
@@ -31,7 +26,9 @@
         exec_rc: 3002
         exec_message: "{{ service_action }} action is not valid. Valid values are 
          'started', 'stopped' and 'restarted'."
-      when: service_action not in "started|stopped|restarted"
+      when: 
+        - service_action not in "started|stopped|restarted"
+        - exec_rc != 3001
 
     - name: Populate service facts
       service_facts:
