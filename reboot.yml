@@ -35,7 +35,7 @@
           - "*********************************************************************"
           - "affected_action: {{ affected_action | upper }} on {{ inventory_hostname }}"
           - "*********************************************************************"
-        when: exec_rc != 3001 and exec_rc != 3002
+      when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Perform Server Restart
       block:
