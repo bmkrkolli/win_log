@@ -41,7 +41,9 @@
         exec_changed: false
         exec_rc: 3003
         exec_message: "{{ service_name }} service not found on {{ inventory_hostname }}"
-      when: ansible_facts.services[service_name] is undefined
+      when: 
+        - ansible_facts.services[service_name] is undefined
+        - exec_rc != 3001 and exec_rc != 3002
 
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
       service:
