@@ -37,7 +37,7 @@
 
     - name: Populate service facts
       debug:
-        msg: "{{ ansible_facts.services[?(@.name=='crond.service')] }}"
+        msg: "{{ ansible_facts.services[?name=='crond.service'] }}"
       when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Set facts on error - service not found
