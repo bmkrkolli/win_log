@@ -79,7 +79,7 @@
         exec_message: "Service: {{ service_name }} already {{ service_action }} 
          - SUCCESS"
       when: 
-        - service_out is not failed and not service_out.changed
+        - service_out is success and not service_out.changed
         - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
     - name: Set facts on success - changed state
@@ -90,7 +90,7 @@
         exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
          - SUCCESS"
       when: 
-        - service_out is success and service_out is not skipped
+        - service_out is success and service_out is not skipped and service_out.changed
         - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
