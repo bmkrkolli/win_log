@@ -27,8 +27,8 @@
         exec_message: "{{ service_action }} action is not valid. Valid values are 
          'started', 'stopped' and 'restarted'."
       when: 
-        - service_action not in "started|stopped|restarted"
-        - exec_rc != 3001
+        - exec_rc != 3001 and service_action is defined
+        - service_action is not "started|stopped|restarted"
 
     - name: Populate service facts
       service_facts:
