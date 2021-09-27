@@ -28,7 +28,7 @@
          'started', 'stopped' and 'restarted'."
       when: 
         - exec_rc != 3001 and service_action is defined
-        - service_action is not "started|stopped|restarted"
+        - service_action not in "started|stopped|restarted"
 
     - name: Populate service facts
       service_facts:
