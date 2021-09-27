@@ -27,7 +27,7 @@
         exec_message: "affected_action {{ affected_action }} unknown. It should restart or reboot"
       when: 
         - affected_action is defined
-        - ('restart' not in affected_action) or ('reboot' not in affected_action)
+        - ('REBOOT' not in affected_action)
 
     - name: Show affected_action variable
       debug:
