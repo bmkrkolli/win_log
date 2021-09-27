@@ -4,6 +4,6 @@
   tasks:
     - name: "Restart Service"
       service: 
-        name: adws
+        name: "{{ service_name }}"
         state: restarted
       register: status
