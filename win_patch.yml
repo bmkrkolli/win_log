@@ -32,11 +32,16 @@
             path: C:\Temp\ansible_win_patching\ansible_patching.txt
             state: touch
 
-#        - name: Reboot before installation
-#          win_reboot:
-#            pre_reboot_delay: 120
-#            reboot_timeout: 300
-#            post_reboot_delay: 120
+        - name: Reboot before installation
+          win_reboot:
+            pre_reboot_delay: 10
+            reboot_timeout: 300
+            post_reboot_delay: 10
+          async: 180
+          poll: 30
+          become: yes
+          become_method: runas
+          become_user: SYSTEM
 
         - name: Last Search and Installation Date
           win_shell: (New-Object -ComObject Microsoft.Update.AutoUpdate).Results() | fl;
