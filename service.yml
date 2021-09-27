@@ -2,92 +2,92 @@
 - hosts: all:!localhost
   gather_facts: false
   tasks:
-- name: Initialize variables
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 1
-    exec_message: "The initial status didn't change during the execution of
-     the playbook."
-    exec_automation: "sra_manage_service_linux"
+    - name: Initialize variables
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 1
+        exec_message: "The initial status didn't change during the execution of
+         the playbook."
+        exec_automation: "sra_manage_service_linux"
 
-- name: Set facts on error - variable is empty
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 3001
-    exec_message: "{{ exec_message|default('') }}{{ item.key }} variable is 
-     empty"
-  with_dict:
-    - {service_name: "{{ service_name }}"}
-    - {service_action: "{{ service_action }}"}
-  when: not item.value
+    - name: Set facts on error - variable is empty
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 3001
+        exec_message: "{{ exec_message|default('') }}{{ item.key }} variable is 
+         empty"
+      with_dict:
+        - {service_name: "{{ service_name }}"}
+        - {service_action: "{{ service_action }}"}
+      when: not item.value
 
-- name: Set facts on error - invalid action
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 3002
-    exec_message: "{{ service_action }} action is not valid. Valid values are 
-     'started', 'stopped' and 'restarted'."
-  when: service_action not in "started|stopped|restarted"
+    - name: Set facts on error - invalid action
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 3002
+        exec_message: "{{ service_action }} action is not valid. Valid values are 
+         'started', 'stopped' and 'restarted'."
+      when: service_action not in "started|stopped|restarted"
 
-- name: Populate service facts
-  service_facts:
-  no_log: true
-  when: exec_rc != 3001 and exec_rc != 3002
+    - name: Populate service facts
+      service_facts:
+      no_log: true
+      when: exec_rc != 3001 and exec_rc != 3002
 
-- name: Set facts on error - service not found
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 3003
-    exec_message: "{{ service_name }} service not found on {{ affected_host }}"
-  when: ansible_facts.services[service_name] is undefined
+    - name: Set facts on error - service not found
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 3003
+        exec_message: "{{ service_name }} service not found on {{ affected_host }}"
+      when: ansible_facts.services[service_name] is undefined
 
-- name: "Service: {{ service_name }} - Action: {{ service_action }}"
-  service:
-    name: "{{ service_name }}"
-    state: "{{ service_action }}"
-  register: service_out
-  ignore_errors: true
-  when: 
-    - ansible_facts.services[service_name] is defined
-    - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
+    - name: "Service: {{ service_name }} - Action: {{ service_action }}"
+      service:
+        name: "{{ service_name }}"
+        state: "{{ service_action }}"
+      register: service_out
+      ignore_errors: true
+      when: 
+        - ansible_facts.services[service_name] is defined
+        - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
-- name: Set facts on error
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 1
-    exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
-     - FAILED"
-  when: 
-    - service_out is failed
-    - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
+    - name: Set facts on error
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 1
+        exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
+         - FAILED"
+      when: 
+        - service_out is failed
+        - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
-- name: Set facts on success - not changed state
-  set_fact:
-    exec_success: true
-    exec_changed: false
-    exec_rc: 0
-    exec_message: "Service: {{ service_name }} already {{ service_action }} 
-     - SUCCESS"
-  when: 
-    - service_out is not failed and not service_out.changed
-    - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
+    - name: Set facts on success - not changed state
+      set_fact:
+        exec_success: true
+        exec_changed: false
+        exec_rc: 0
+        exec_message: "Service: {{ service_name }} already {{ service_action }} 
+         - SUCCESS"
+      when: 
+        - service_out is not failed and not service_out.changed
+        - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
-- name: Set facts on success - changed state
-  set_fact:
-    exec_success: true
-    exec_changed: true
-    exec_rc: 0
-    exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
-     - SUCCESS"
-  when: 
-    - service_out is success and service_out is not skipped
-    - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
+    - name: Set facts on success - changed state
+      set_fact:
+        exec_success: true
+        exec_changed: true
+        exec_rc: 0
+        exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
+         - SUCCESS"
+      when: 
+        - service_out is success and service_out is not skipped
+        - exec_rc != 3001 and exec_rc != 3002 and exec_rc != 3003
 
-- name: "Service: {{ service_name }} - Action: {{ service_action }}"
-  debug:
-    msg: "RC: {{ exec_rc }}; {{ exec_message }}"
+    - name: "Service: {{ service_name }} - Action: {{ service_action }}"
+      debug:
+        msg: "RC: {{ exec_rc }}; {{ exec_message }}"
