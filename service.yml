@@ -22,6 +22,7 @@
         - {service_name: "{{ service_name }}"}
         - {service_action: "{{ service_action }}"}
       when: not item.value
+      ignore_errors: true
 
     - name: Set facts on error - invalid action
       set_fact:
