@@ -43,7 +43,7 @@
         exec_changed: false
         exec_rc: 3003
         exec_message: "{{ service_name }} service not found on {{ affected_host }}"
-      when: ansible_facts.services[service_name] is undefined
+      when: service_name not in ansible_facts.services
 
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
       service:
