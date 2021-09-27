@@ -1,86 +1,90 @@
-- name: Initialize variables
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 1
-    exec_message: "The initial status didn't change during the execution of
-     the playbook."
-    exec_automation: "sra_restart_linux"
-
-- name: Set facts on error - variable is empty
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 3001
-    exec_message: "affected_action variable is empty"
-  when: affected_action is undefined
-
-- name: Set facts on error - operation is not restart or reboot
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 3002
-    exec_message: "affected_action unknown. It should restart or reboot"
-  when: 
-    - affected_action is defined
-    - affected_action | upper != 'RESTART' or affected_action | upper != 'REBOOT'
-
-- name: Show affected_action variable
-  debug:
-    msg:
-      - "*********************************************************************"
-      - "affected_action: {{ affected_action | upper }} on {{ affected_host }}"
-      - "*********************************************************************"
-
-- name: Perform Server Restart
-  block:
-    - name: Perform Server Restart
-      reboot:
-        reboot_timeout: "{{ restart_timeout }}"
-      register: sra_reboot_r
-      ignore_errors: true
-
-    - name: Set elapsed_time variable
-      set_fact:
-        elapsed_time: "{{ sra_reboot_r.elapsed }}"
-      when: sra_reboot_r.rebooted
-
-    - name: Collect uptime value from facts
-      setup:
-        filter: 'ansible_uptime_seconds'
-      when: sra_reboot_r.rebooted
-
-    - name: Set uptime_val variable
-      set_fact:
-        uptime_val: "{{ ansible_uptime_seconds }}"
-      when: sra_reboot_r.rebooted
-
-    - name: Set facts on error - Perform Server Restart
+---
+- hosts: all:!localhost
+  gather_facts: false
+  tasks:
+    - name: Initialize variables
       set_fact:
         exec_success: false
         exec_changed: false
         exec_rc: 1
-        exec_message: "Failed to restart Linux server {{ affected_host }}."
+        exec_message: "The initial status didn't change during the execution of
+         the playbook."
         exec_automation: "sra_restart_linux"
-      when: not sra_reboot_r.rebooted or uptime_val | int > 1800
 
-    - name: Set facts on Sucess - Check uptime
+    - name: Set facts on error - variable is empty
       set_fact:
-        exec_success: true
-        exec_changed: true
-        exec_rc: 0
-        exec_message: "Linux server {{ affected_hots }} successfully restarted. 
-         Server uptime: {{ uptime_val }} seconds."
-        exec_automation: "sra_restart_linux"
-      when: 
-        - uptime_val | int < 1800 or uptime_val | int == 1800
-        - sra_reboot_r.rebooted
-  when: exec_rc != 3001 and exec_rc != 3002
+        exec_success: false
+        exec_changed: false
+        exec_rc: 3001
+        exec_message: "affected_action variable is empty"
+      when: affected_action is undefined
 
-- name: Restart Linux Server Status
-  debug:
-    msg:
-      - "*************************************************"
-      - "RC:     {{ exec_rc }}"
-      - "RC msg: {{ exec_message }}"
-      - "*************************************************"
+    - name: Set facts on error - operation is not restart or reboot
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 3002
+        exec_message: "affected_action unknown. It should restart or reboot"
+      when: 
+        - affected_action is defined
+        - affected_action | upper != 'RESTART' or affected_action | upper != 'REBOOT'
+
+    - name: Show affected_action variable
+      debug:
+        msg:
+          - "*********************************************************************"
+          - "affected_action: {{ affected_action | upper }} on {{ affected_host }}"
+          - "*********************************************************************"
+
+    - name: Perform Server Restart
+      block:
+        - name: Perform Server Restart
+          reboot:
+            reboot_timeout: "{{ restart_timeout }}"
+          register: sra_reboot_r
+          ignore_errors: true
+
+        - name: Set elapsed_time variable
+          set_fact:
+            elapsed_time: "{{ sra_reboot_r.elapsed }}"
+          when: sra_reboot_r.rebooted
+
+        - name: Collect uptime value from facts
+          setup:
+            filter: 'ansible_uptime_seconds'
+          when: sra_reboot_r.rebooted
+
+        - name: Set uptime_val variable
+          set_fact:
+            uptime_val: "{{ ansible_uptime_seconds }}"
+          when: sra_reboot_r.rebooted
+
+        - name: Set facts on error - Perform Server Restart
+          set_fact:
+            exec_success: false
+            exec_changed: false
+            exec_rc: 1
+            exec_message: "Failed to restart Linux server {{ affected_host }}."
+            exec_automation: "sra_restart_linux"
+          when: not sra_reboot_r.rebooted or uptime_val | int > 1800
+
+        - name: Set facts on Sucess - Check uptime
+          set_fact:
+            exec_success: true
+            exec_changed: true
+            exec_rc: 0
+            exec_message: "Linux server {{ affected_hots }} successfully restarted. 
+             Server uptime: {{ uptime_val }} seconds."
+            exec_automation: "sra_restart_linux"
+          when: 
+            - uptime_val | int < 1800 or uptime_val | int == 1800
+            - sra_reboot_r.rebooted
+      when: exec_rc != 3001 and exec_rc != 3002
+
+    - name: Restart Linux Server Status
+      debug:
+        msg:
+          - "*************************************************"
+          - "RC:     {{ exec_rc }}"
+          - "RC msg: {{ exec_message }}"
+          - "*************************************************"
