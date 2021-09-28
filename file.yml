@@ -26,10 +26,9 @@
         exec_success: false
         exec_changed: false
         exec_rc: 3002
-        exec_message: "{{ file_prem }} Permission is not valid. Valid 4,5,6 or 7"
+        exec_message: "{{ file_prem }} Permission is not valid."
       when: 
         - exec_rc != 3001 and file_prem is defined
-        - file_prem is not regex(pattern_digits)
         - file_prem is not regex(pattern_num)
 
     - name: Show variables
