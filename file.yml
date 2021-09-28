@@ -59,7 +59,7 @@
         - name: "Set permission {{ file_prem }} to {{ file_name }}"
           file:
             path: "{{ file_name }}"
-            mode: "{{ file_prem }}"
+            mode: "0{{ file_prem }}"
           register: permission_status
           when: stat_result.stat.exists
           become: yes
