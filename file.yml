@@ -11,7 +11,7 @@
          the playbook."
         exec_automation: "sra_linux_change_rights_file_dir"
         pattern_digits: '^.{3}$'
-        pattern_num: '^[0-7]{3}$'
+        pattern_num: '^[0-7][0-7][0-7]$'
 
     - name: Set facts on error - variable is empty
       set_fact:
