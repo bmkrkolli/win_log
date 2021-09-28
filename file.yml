@@ -39,6 +39,7 @@
           - "File Name or Path: {{ file_name }}"
           - "Access Permission: {{ file_prem }}"
           - "*************************************************"
+      when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Perform action to file/directory
       block:
@@ -53,7 +54,7 @@
             exec_success: false
             exec_changed: false
             exec_rc: 3003
-            exec_message: "{{ file_name }} file or directory not exists on {{ affected_host }}"
+            exec_message: "{{ file_name }} file or directory not exists on {{ inventory_hostname }}"
           when: not stat_result.stat.exists
 
         - name: "Set permission {{ file_prem }} to {{ file_name }}"
