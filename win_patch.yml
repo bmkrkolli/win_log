@@ -75,14 +75,10 @@
           win_shell: >-
             $ses=New-Object -ComObject 'Microsoft.Update.Session';
             $srch=$ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
-            $dld=New-Object -ComObject 'Microsoft.Update.UpdateColl';
-            foreach($pf in $result.Updates){if(!($pf.IsDownloaded)){$dld.Add($pf) | Out-Null}};
-            $dldr=$ses.CreateUpdateDownloader();$dldr.Updates = $dld;$c=$dld.count; 
-            if($c -ne 0){$dldop=$dldr.Download();};$dldop;
             $ui = New-Object -ComObject 'Microsoft.Update.UpdateColl';
-            foreach($cu in $result.Updates){if($cu.IsDownloaded){$ui.Add($cu) | Out-Null;};};
+            foreach($cu in $result.Updates){if($cu.IsDownloaded){$ui.Add($cu) | Out-Null}};
             $instlr = $ses.CreateUpdateInstaller();$instlr.Updates = $ui;
-            $ic=$ui.count;if($ic -ne 0){$ir = $ui.Install();}; 
+            $ic=$ui.count;if($ic -ne 0){$ir = $instlr.Install();}; 
             $instlr.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$ir;
           register: instl
           become: yes
