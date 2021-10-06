@@ -81,8 +81,9 @@
             if($c -ne 0){$dldop=$dldr.Download();};$dldop;
             $ui = New-Object -ComObject 'Microsoft.Update.UpdateColl';
             foreach($cu in $result.Updates){if($cu.IsDownloaded){$ui.Add($cu) | Out-Null;};};
+            $instlr = $ses.CreateUpdateInstaller();$instlr.Updates = $ui;
             $ic=$ui.count;if($ic -ne 0){$ir = $ui.Install();}; 
-            $ui.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$ir;
+            $instlr.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$ir;
           register: instl
           become: yes
           become_method: runas
