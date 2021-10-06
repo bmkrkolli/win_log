@@ -1,7 +1,5 @@
 - hosts: all:!localhost
   gather_facts: false
-  strategy: free
-
   tasks:
     - name: Starting block to make sure endpoint reboot at the end of play
       block:
