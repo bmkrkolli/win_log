@@ -21,10 +21,10 @@
 
     - name: Set facts on error - variable is empty
       set_fact:
-        srv_action: "{% if service_action | regex_search('restar',ignorecase=True) %}restarted
-         {% elif service_action | regex_search('stop',ignorecase=True) %}stopped
-         {% elif service_action | regex_search('start',ignorecase=True) %}started
-         {% else %}{{ service_action }}{% endif %}" 
+        srv_action: "{% if service_action|regex_search('restar',ignorecase=True) %}
+         restarted{% elif service_action|regex_search('stop',ignorecase=True) %}
+         stopped{% elif service_action|regex_search('start',ignorecase=True) %}
+         started{% else %}{{ service_action }}{% endif %}" 
       when: exec_rc != 3001 and service_action is defined
 
     - name: Set facts on error - invalid action
