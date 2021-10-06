@@ -10,6 +10,9 @@
   tasks:
     - name: "print service action"
       debug:
+        msg: "{{ sr_data['ITDSERVICEACTION'] }}"
+    - name: "print service action"
+      debug:
         msg: "{{ service_action }}"
 
     - name: Initialize variables
