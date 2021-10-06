@@ -3,8 +3,8 @@
   gather_facts: false
   vars:
     service_action: "{% if sr_data['ITDSERVICEACTION'] | regex_search('start',ignorecase=True) %}started
-     {% elif 'stop|STOP' in sr_data['ITDSERVICEACTION'] %}stopped
-     {% elif 'restart|RESTART' in sr_data['ITDSERVICEACTION'] %}restarted
+     {% elif sr_data['ITDSERVICEACTION'] | regex_search('stop',ignorecase=True) %}stopped
+     {% elif sr_data['ITDSERVICEACTION'] | regex_search('restart',ignorecase=True) %}restarted
      {% else %}{{ sr_data['ITDSERVICEACTION'] }}{% endif %}" 
   tasks:
     - name: "print service action"
@@ -12,7 +12,7 @@
         msg: "{{ sr_data['ITDSERVICEACTION'] }}"
     - name: "print service action"
       debug:
-        msg: "{{ service_action }}"
+        msg: "{{ service_action|trim }}"
 
     - name: Initialize variables
       set_fact:
