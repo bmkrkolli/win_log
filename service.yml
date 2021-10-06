@@ -40,7 +40,7 @@
          'started', 'stopped' and 'restarted'."
       when: 
         - exec_rc != 3001 and service_action is defined
-        - service_action not in "started|stopped|restarted"
+        - service_action|trim not in "started|stopped|restarted"
 
     - name: Populate service facts
       service_facts:
@@ -60,7 +60,7 @@
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
       service:
         name: "{{ service_name }}"
-        state: "{{ service_action }}"
+        state: "{{ service_action|trim }}"
       register: service_out
       ignore_errors: true
       become: yes
