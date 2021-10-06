@@ -1,20 +1,7 @@
 ---
 - hosts: all:!localhost
   gather_facts: false
-  vars:
-    service_action: 
-    "{% if sr_data['ITDSERVICEACTION'] | regex_search('restart',ignorecase=True) %}restarted
-     {% elif sr_data['ITDSERVICEACTION'] | regex_search('stop',ignorecase=True) %}stopped
-     {% elif sr_data['ITDSERVICEACTION'] | regex_search('start',ignorecase=True) %}started
-     {% else %}{{ sr_data['ITDSERVICEACTION'] }}{% endif %}" 
   tasks:
-    - name: "print service action"
-      debug:
-        msg: "{{ sr_data['ITDSERVICEACTION'] }}"
-    - name: "print service action"
-      debug:
-        msg: "{{ service_action|trim }}"
-
     - name: Initialize variables
       set_fact:
         exec_success: false
@@ -32,6 +19,14 @@
         exec_message: "service_name or service_action variable is empty"
       when: service_name is undefined or service_action is undefined      
 
+    - name: Set facts on error - variable is empty
+      set_fact:
+        srv_action: "{% if service_action | regex_search('restar',ignorecase=True) %}restarted
+         {% elif service_action | regex_search('stop',ignorecase=True) %}stopped
+         {% elif service_action | regex_search('start',ignorecase=True) %}started
+         {% else %}{{ service_action }}{% endif %}" 
+      when: exec_rc != 3001 and service_action is defined
+
     - name: Set facts on error - invalid action
       set_fact:
         exec_success: false
@@ -41,7 +36,7 @@
          'started', 'stopped' and 'restarted'."
       when: 
         - exec_rc != 3001 and service_action is defined
-        - service_action|trim not in "started|stopped|restarted"
+        - srv_action|trim not in "started|stopped|restarted"
 
     - name: Populate service facts
       service_facts:
@@ -61,7 +56,7 @@
     - name: "Service: {{ service_name }} - Action: {{ service_action }}"
       service:
         name: "{{ service_name }}"
-        state: "{{ service_action|trim }}"
+        state: "{{ srv_action|trim }}"
       register: service_out
       ignore_errors: true
       become: yes
