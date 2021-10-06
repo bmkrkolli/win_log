@@ -33,7 +33,7 @@
         exec_changed: false
         exec_rc: 3002
         exec_message: "{{ service_action }} action is not valid. Valid values are 
-         'started', 'stopped' and 'restarted'."
+         'start/started', 'stop/stopped' and 'restart/restarted'."
       when: 
         - exec_rc != 3001 and service_action is defined
         - srv_action|trim not in "started|stopped|restarted"
