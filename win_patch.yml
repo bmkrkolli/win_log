@@ -68,6 +68,21 @@
             $dldr.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$dldop;
           register: dldr
 
+
+        - name: Install Updates if Downloaded
+          win_shell: >-
+            $ses=New-Object -ComObject 'Microsoft.Update.Session';
+            $srch=$ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
+            $dld=New-Object -ComObject 'Microsoft.Update.UpdateColl';
+            foreach($pf in $result.Updates){if(!($pf.IsDownloaded)){$dld.Add($pf) | Out-Null}};
+            $dldr=$ses.CreateUpdateDownloader();$dldr.Updates = $dld;$c=$dld.count; 
+            if($c -ne 0){$dldop=$dldr.Download();};$dldop;
+            $ui = New-Object -ComObject 'Microsoft.Update.UpdateColl';
+            foreach($cu in $result.Updates){if($cu.IsDownloaded){$ui.Add($cu) | Out-Null;};};
+            $ic=$ui.count;if($ic -ne 0){$ir = $ui.Install();}; 
+            $ui.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$ir;
+          register: dldr
+
         - name: Start Time
           win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
           register: sdt
