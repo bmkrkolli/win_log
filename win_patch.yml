@@ -46,7 +46,8 @@
             (New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow();
             $ses=New-Object -ComObject 'Microsoft.Update.Session';
             $srch = $ses.CreateUpdateSearcher();$result=$srch.Search("IsInstalled=0");
-            $result.Updates() | Select *;
+            $result.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;
+            $result.Updates().Categories();
           register: srch
           changed_when: false
 
