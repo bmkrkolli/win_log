@@ -3,9 +3,9 @@
   gather_facts: false
   vars:
     service_action: "{% if 'start' in sr_data['ITDSERVICEACTION'] %}started
-      {% elif 'stop' in sr_data['ITDSERVICEACTION'] %}stopped
-      {% elif 'restart' in sr_data['ITDSERVICEACTION'] %}restarted
-      {% else %}sr_data['ITDSERVICEACTION']{% endif %}" 
+     {% elif 'stop' in sr_data['ITDSERVICEACTION'] %}stopped
+     {% elif 'restart' in sr_data['ITDSERVICEACTION'] %}restarted
+     {% else %}sr_data['ITDSERVICEACTION']{% endif %}" 
   tasks:
     - name: "print service action"
       debug:
