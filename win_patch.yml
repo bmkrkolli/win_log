@@ -68,6 +68,10 @@
             $dldr.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$dldop;
           register: dldr
 
+        - name: Start Time
+          win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
+          register: sdt
+          changed_when: false
 
         - name: Install Updates if Downloaded
           win_shell: >-
@@ -81,28 +85,23 @@
             foreach($cu in $result.Updates){if($cu.IsDownloaded){$ui.Add($cu) | Out-Null;};};
             $ic=$ui.count;if($ic -ne 0){$ir = $ui.Install();}; 
             $ui.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$ir;
-          register: dldr
+          register: instl
 
-        - name: Start Time
-          win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
-          register: sdt
-          changed_when: false
-
-        - name: Installing Windows Patches
-          win_updates:
-            category_names:
-            - CriticalUpdates
-            - DefinitionUpdates
-            - SecurityUpdates
-            - Updates
-            - UpdateRollups
-            - ServicePacks
-            - FeaturePacks
-            server_selection: windows_update 
-            state: installed
-            reboot: no
-            log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
-          register: wsusupdates
+#        - name: Installing Windows Patches
+#          win_updates:
+#            category_names:
+#            - CriticalUpdates
+#            - DefinitionUpdates
+#            - SecurityUpdates
+#            - Updates
+#            - UpdateRollups
+#            - ServicePacks
+#            - FeaturePacks
+#            server_selection: windows_update 
+#            state: installed
+#            reboot: no
+#            log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
+#          register: wsusupdates
 
         - name: End Time
           win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; Write-Host $tt.TotalHours "hours on {{ inventory_hostname }}";
