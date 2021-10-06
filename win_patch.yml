@@ -62,6 +62,9 @@
             if($c -ne 0){$dldop=$dldr.Download();};
             $dldr.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$dldop;
           register: dldr
+          become: yes
+          become_method: runas
+          become_user: SYSTEM
 
         - name: Start Time
           win_shell: get-date -UFormat "%Y/%m/%d %H:%M:%S" | ConvertTo-JSON
@@ -81,6 +84,9 @@
             $ic=$ui.count;if($ic -ne 0){$ir = $ui.Install();}; 
             $ui.Updates() | Select Title,IsDownloaded,IsHidden,IsInstalled,IsMandatory;$ir;
           register: instl
+          become: yes
+          become_method: runas
+          become_user: SYSTEM
 
 #        - name: Installing Windows Patches
 #          win_updates:
@@ -108,46 +114,11 @@
           register: tt
           changed_when: false
 
-        - name: No Patches found
-          include_role:
-            name: returncode
-          vars:
-            rc_support: account
-            rc_group: misconfiguration
-            rc_number: 100
-            rc_message: "{{ inventory_hostname }} : No Patches Found in {{ tt.stdout }}"
-          when: wsusupdates.found_update_count == 0
-
         - name: Reboot after installation
           win_reboot:
             pre_reboot_delay: 120
             reboot_timeout: 900
             post_reboot_delay: 120
-          when: 
-            - wsusupdates.found_update_count != 0
-            - wsusupdates.found_update_count == wsusupdates.installed_update_count
-
-        - name: Successfully installed patches
-          include_role:
-            name: returncode
-          vars:
-            rc_success: true
-            rc_message: "{{ inventory_hostname }} : Successfully Installed all Patches {{ wsusupdates }} in {{ tt.stdout }}"
-          when: 
-            - wsusupdates.found_update_count != 0
-            - wsusupdates.found_update_count == wsusupdates.installed_update_count
-
-        - name: Successfully installed only few patches
-          include_role:
-            name: returncode
-          vars:
-            rc_support: account
-            rc_group: misconfiguration
-            rc_number: 101
-            rc_message: "{{ inventory_hostname }} : Successfully Installed only few Patches {{ wsusupdates }} in {{ tt.stdout }}"
-          when: 
-            - wsusupdates.found_update_count != 0
-            - wsusupdates.found_update_count > wsusupdates.installed_update_count
 
       rescue:
         - name: failed
@@ -157,4 +128,4 @@
             rc_support: undetermined
             rc_group: unsupported_platform
             rc_number: 102
-            rc_message: "{{ inventory_hostname }} : Error {{ wsusupdates }}"
+            rc_message: "{{ inventory_hostname }} : Error {{ instl }}"
