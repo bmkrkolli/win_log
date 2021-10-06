@@ -37,11 +37,6 @@
             pre_reboot_delay: 10
             reboot_timeout: 300
             post_reboot_delay: 10
-          async: 180
-          poll: 30
-          become: yes
-          become_method: runas
-          become_user: SYSTEM
 
         - name: Last Search and Installation Date
           win_shell: (New-Object -ComObject Microsoft.Update.AutoUpdate).Results() | fl;
@@ -102,6 +97,11 @@
 #            reboot: no
 #            log_path: C:\Temp\ansible_win_patching\ansible_patching.txt
 #          register: wsusupdates
+#          async: 180
+#          poll: 30
+#          become: yes
+#          become_method: runas
+#          become_user: SYSTEM
 
         - name: End Time
           win_shell: $tt=(get-date) - [datetime]"{{ sdt.stdout | from_json }}"; Write-Host $tt.TotalHours "hours on {{ inventory_hostname }}";
