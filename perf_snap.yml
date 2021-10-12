@@ -1,0 +1,74 @@
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    tools_6_iostat: "/usr/bin/iostat -x"
+    tools_7_iostat: "/bin/iostat -x"
+    tools_8_iostat: "/usr/bin/iostat -x"
+    tools_6_vmstat: "/usr/bin/vmstat"
+    tools_7_vmstat: "/bin/vmstat"
+    tools_8_vmstat: "/usr/bin/vmstat"
+    tools_6_top: "/usr/bin/top -b -n 1"
+    tools_7_top: "/bin/top -b -n 1"
+    tools_8_top: "/usr/bin/top -b -n 1"
+    tools_6_lsof: "/usr/bin/lsof"
+    tools_7_lsof: "/sbin/lsof"
+    tools_8_lsof: "/usr/bin/lsof"
+    tools_6_df: "/bin/df -h"
+    tools_7_df: "/bin/df -h"
+    tools_8_df: "/usr/bin/df -h"
+    tools_6_ifconfig: "/sbin/ifconfig -a"
+    tools_7_ifconfig: "/sbin/ifconfig -a"
+    tools_8_ifconfig: "/usr/sbin/ifconfig -a"
+  tasks:
+  - name: Install required packages
+    yum:
+      name:
+        - sysstat
+        - lsof
+        - net-tools
+
+  - name: iostat 
+    shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_iostat')}}"
+    register: iostat
+    changed_when: "false"
+
+  - name: vmstat
+    shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_vmstat')}}"
+    register: vmstat
+    changed_when: "false"
+
+  - name: lsof
+    shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_lsof')}}"
+    register: lsof
+    changed_when: "false"
+
+  - name: top -b -n 1
+    shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_top')}}"
+    register: top
+    changed_when: "false"
+
+  - name: df -h
+    shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_df')}}"
+    register: df
+    changed_when: "false"
+
+  - name: ifconfig -a
+    shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_ifconfig')}}"
+    register: ifc
+    changed_when: "false"
+
+  - name: save facts gathered
+    set_fact:
+      output: {
+        'iostat': "{{ iostat.stdout_lines }}",
+        'vmstat': "{{ vmstat.stdout_lines }}",
+        'lsof': "{{ lsof.stdout_lines }}",
+        'top': "{{ top.stdout_lines }}",
+        'df': "{{ df.stdout_lines }}",
+        'ifc': "{{ ifc.stdout_lines }}",
+      }
+
+  - name: show output
+    debug: var=output
