@@ -65,7 +65,7 @@
       output: {
         'iostat': "{{ iostat.stdout_lines }}",
         'vmstat': "{{ vmstat.stdout_lines }}",
-        'lsof': "{{ lsof.stdout_lines }}",
+#        'lsof': "{{ lsof.stdout_lines }}",
         'top': "{{ top.stdout_lines }}",
         'df': "{{ df.stdout_lines }}",
         'ifc': "{{ ifc.stdout_lines }}",
