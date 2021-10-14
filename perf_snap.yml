@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: all!localhost
   gather_facts: false
   become: true
   vars:
