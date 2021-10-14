@@ -82,7 +82,6 @@
       slack_token: "{{ lookup('env','s_token') }}"
       auth_token: "{{ lookup('env','a_token') }}"
     changed_when: false
-    no_log: true
     ignore_errors: true
 
   - name: Send Report to slack
