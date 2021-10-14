@@ -1,5 +1,5 @@
 ---
-- hosts: all!localhost
+- hosts: all
   gather_subset: min
   become: true
   vars:
