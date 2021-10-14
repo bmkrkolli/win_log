@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  gather_facts: true
+  gather_facts: false
   become: true
   vars:
     tools_6_iostat: "/usr/bin/iostat -x"
@@ -28,36 +28,37 @@
         - sysstat
         - lsof
         - net-tools
+    ignore_errors: true   
 
   - name: iostat 
     shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_iostat')}}"
     register: iostat
-    changed_when: "false"
+    changed_when: false
 
   - name: vmstat
     shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_vmstat')}}"
     register: vmstat
-    changed_when: "false"
+    changed_when: false
 
   - name: lsof
     shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_lsof')}}"
     register: lsof
-    changed_when: "false"
+    changed_when: false
 
   - name: top -b -n 1
     shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_top')}}"
     register: top
-    changed_when: "false"
+    changed_when: false
 
   - name: df -h
     shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_df')}}"
     register: df
-    changed_when: "false"
+    changed_when: false
 
   - name: ifconfig -a
     shell: "{{ lookup('vars', 'tools_'+ ansible_distribution_major_version + '_ifconfig')}}"
     register: ifc
-    changed_when: "false"
+    changed_when: false
 
   - name: save facts gathered
     set_fact:
@@ -70,5 +71,29 @@
         'ifc': "{{ ifc.stdout_lines }}",
       }
 
-  - name: show output
-    debug: var=output
+  - name: Generate Report
+    copy:
+      content: "{{ output | to_nice_json }}"
+      dest: "/tmp/{{ inventory_hostname }}_perf.json"
+    delegate_to: localhost
+    ignore_errors: true
+
+  - name: Set facts for event acknowledgement
+    set_fact:
+      slack_token: "{{ lookup('env','s_token') }}"
+      auth_token: "{{ lookup('env','a_token') }}"
+    changed_when: false
+    delegate_to: localhost
+    ignore_errors: true
+
+  - name: Send Report to slack
+    command: curl "https://slack.com/api/files.upload"
+      -F token='{{ auth_token }}' -F initial_comment='Performance Snapshot on {{ inventory_hostname }}'
+      -F channels='automation' -F title='Performance Snapshot'
+      -F file=@'/tmp/{{ inventory_hostname }}_perf.json'
+    register: response
+    args:
+      warn: false
+    changed_when: false
+    delegate_to: localhost
+    ignore_errors: true
