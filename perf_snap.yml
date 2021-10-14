@@ -75,7 +75,6 @@
     copy:
       content: "{{ output | to_nice_json }}"
       dest: "/tmp/{{ inventory_hostname }}_perf.json"
-    delegate_to: localhost
     ignore_errors: true
 
   - name: Set facts for event acknowledgement
@@ -83,7 +82,7 @@
       slack_token: "{{ lookup('env','s_token') }}"
       auth_token: "{{ lookup('env','a_token') }}"
     changed_when: false
-    delegate_to: localhost
+    no_log: true
     ignore_errors: true
 
   - name: Send Report to slack
@@ -95,5 +94,4 @@
     args:
       warn: false
     changed_when: false
-    delegate_to: localhost
     ignore_errors: true
