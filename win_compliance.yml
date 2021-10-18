@@ -9,4 +9,4 @@
       win_share: 
         name: internal
         path: C:\Utils
-
+        state: absent
