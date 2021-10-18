@@ -9,4 +9,6 @@
       win_share: 
         name: Utils
         path: C:\Utils
-        state: absent
+        state: present
+        list: yes
+        full: Administrators
