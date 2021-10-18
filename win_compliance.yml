@@ -8,4 +8,5 @@
     - name: win_share
       win_share: 
         name: internal
-        path: "C:\Utils"
+        path: C:\Utils
+
