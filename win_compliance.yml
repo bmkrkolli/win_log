@@ -1,0 +1,10 @@
+---
+- hosts: all
+  gather_facts: false
+  tasks:
+    - name: Share folders
+      win_shell: GWMI -class Win32_Share
+
+    - name: win_share
+      win_share: 
+        name: "C:\Utils"
