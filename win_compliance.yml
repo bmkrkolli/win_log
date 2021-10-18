@@ -7,6 +7,6 @@
 
     - name: win_share
       win_share: 
-        name: internal
+        name: Utils
         path: C:\Utils
         state: absent
