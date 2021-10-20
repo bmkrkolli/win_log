@@ -41,7 +41,7 @@
       block:
         - name: Perform Server Restart
           reboot:
-            reboot_timeout: "{{ restart_timeout | default('300') }}"
+            reboot_timeout: "{{ restart_timeout | default('40') }}"
           register: sra_reboot_r
           become: yes
           ignore_errors: true
