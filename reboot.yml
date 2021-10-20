@@ -32,16 +32,14 @@
     - name: Show affected_action variable
       debug:
         msg:
-          - "*********************************************************************"
-          - "affected_action: {{ affected_action | upper }} on {{ inventory_hostname }}"
-          - "*********************************************************************"
+          - "affected_action: {{ affected_action | upper }} on {{ inventory_hostname }} timeout {{ restart_timeout | default('300') }}"
       when: exec_rc != 3001 and exec_rc != 3002
 
     - name: Perform Server Restart
       block:
         - name: Perform Server Restart
           reboot:
-            reboot_timeout: "{{ restart_timeout | default('40') }}"
+            reboot_timeout: "{{ restart_timeout | default('300') }}"
           register: sra_reboot_r
           become: yes
           ignore_errors: true
