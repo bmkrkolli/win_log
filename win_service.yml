@@ -1,4 +1,7 @@
 ---
+- hosts: all:!localhost
+  gather_facts: false
+  tasks:
 - name: Initialize variables
   set_fact:
     exec_success: false
