@@ -87,7 +87,7 @@
         - name: Manage service with state and start_mode
           win_service:
             name: "{{ service_name }}"
-            start_mode: "{{ srv_mode }}"
+            start_mode: "{{ srv_mode|trim }}"
             state: "{{ srv_action|trim }}"
           ignore_errors: true
           register: mng_state_start_output
