@@ -92,7 +92,6 @@
           ignore_errors: true
           register: mng_state_start_output
           when:
-            - exec_rc != 304 and exec_rc != 302 and exec_rc != 303
             - service_action is defined and service_action
             - start_mode is defined and start_mode
 
@@ -103,7 +102,6 @@
           ignore_errors: true
           register: mng_state_output
           when:
-            - exec_rc != 304 and exec_rc != 303
             - service_action is defined and service_action
             - start_mode is undefined or not start_mode
 
@@ -114,7 +112,6 @@
           ignore_errors: true
           register: mng_start_output
           when:
-            - exec_rc != 304 and exec_rc != 302
             - service_action is undefined or not service_action
             - start_mode is defined and start_mode
 
@@ -123,30 +120,19 @@
             exec_success: false
             exec_changed: false
             exec_rc: 1
-            exec_message: "Service: {{ service_name }} - Action: {{ service_action | default('not defined') }} - Start mode: {{ start_mode | default('not defined') }} 
-              on {{ inventory_hostname }} - FAILED"
+            exec_message: "Service: {{ service_name }} - Action: {{ service_action | default('not defined') }} 
+             - Start mode: {{ start_mode | default('not defined') }} on {{ inventory_hostname }} - FAILED"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_start_output is failed or mng_state_output is failed or mng_start_output is failed
-
-        - name: Set facts on success - no action performed
-          set_fact:
-            exec_success: true
-            exec_changed: false
-            exec_rc: 0
-            exec_message: "Service: {{ service_name }} - service_action or start_mode not defined. 
-              No action perfomed - SUCCESS"
-            exec_automation: "sra_manage_service_windows"
-          when: 
-            - mng_state_start_output is skipped and mng_state_output is skipped and mng_start_output is skipped
 
         - name: Set facts on success - state and start_mode not changed
           set_fact:
             exec_success: true
             exec_changed: false
             exec_rc: 0
-            exec_message: "Service: {{ service_name }} is already {{ service_action }} and already {{ start_mode }}
-              on {{ inventory_hostname }} - SUCCESS"
+            exec_message: "Service: {{ service_name }} is already {{ service_action }} 
+              and already {{ start_mode }} on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_start_output is not skipped
@@ -158,8 +144,8 @@
             exec_success: true
             exec_changed: true
             exec_rc: 0
-            exec_message: "Service: {{ service_name }} - Action: {{ service_action }} - Mode: {{ start_mode }}
-              on {{ inventory_hostname }} - SUCCESS"
+            exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
+              - Mode: {{ start_mode }} on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_start_output is not skipped
@@ -185,8 +171,8 @@
             exec_success: true
             exec_changed: true
             exec_rc: 0
-            exec_message: "Service: {{ service_name }} - Action: {{ service_action }}
-              on {{ inventory_hostname }} - SUCCESS"
+            exec_message: "Service: {{ service_name }} - Action: 
+              {{ service_action }} on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_output is not skipped
@@ -198,8 +184,8 @@
             exec_success: true
             exec_changed: false
             exec_rc: 0
-            exec_message: "Service: {{ service_name }} start_mode already {{ start_mode }}
-              on {{ inventory_hostname }} - SUCCESS"
+            exec_message: "Service: {{ service_name }} start_mode already 
+              {{ start_mode }} on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_start_output is not skipped
@@ -219,7 +205,10 @@
             - mng_start_output is success
             - mng_start_output.changed
       when: 
-        - exec_rc != 301 and exec_rc != 302 and exec_rc != 303 and exec_rc != 304
+        - exec_rc != 301 
+        - exec_rc != 302 
+        - exec_rc != 303 
+        - exec_rc != 304
 
     - name: "Service: {{ service_name }} - Action: {{ service_action | default('not defined') }} - Mode: {{ start_mode | default('not defined') }}"
       debug:
