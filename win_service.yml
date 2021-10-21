@@ -21,9 +21,9 @@
 
     - name: set action properly
       set_fact:
-        srv_action: "{% if service_action|regex_search('^restart$',ignorecase=True) %}\
-          restarted{% elif service_action|regex_search('^stop$',ignorecase=True) %}\
-          stopped{% elif service_action|regex_search('^start$',ignorecase=True) %}\
+        srv_action: "{% if service_action|regex_search('^restart$',ignorecase=True) %}
+          restarted{% elif service_action|regex_search('^stop$',ignorecase=True) %}
+          stopped{% elif service_action|regex_search('^start$',ignorecase=True) %}
           started{% else %} {{ service_action }} {% endif %}"
       when: exec_rc != 301 and service_action is defined
 
@@ -39,10 +39,10 @@
 
     - name: set mode properly
       set_fact:
-        srv_mode: "{% if start_mode|regex_search('^auto$',ignorecase=True) %}\
-          auto{% elif start_mode|regex_search('^delay$',ignorecase=True) %}\
-          delayed{% elif start_mode|regex_search('^disable$',ignorecase=True) %}\
-          disabled{% elif start_mode|regex_search('^manual$',ignorecase=True) %}\
+        srv_mode: "{% if start_mode|regex_search('^auto$',ignorecase=True) %}
+          auto{% elif start_mode|regex_search('^delay$',ignorecase=True) %}
+          delayed{% elif start_mode|regex_search('^disable$',ignorecase=True) %}
+          disabled{% elif start_mode|regex_search('^manual$',ignorecase=True) %}
           manual{% else %} {{ start_mode }} {% endif %}"
       when: exec_rc != 301 and exec_rc != 302 and start_mode is defined
 
