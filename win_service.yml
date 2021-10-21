@@ -69,7 +69,7 @@
         exec_success: false
         exec_changed: false
         exec_rc: 304
-        exec_message: "{{ service_name }} service not found on {{ affected_host }}"
+        exec_message: "{{ service_name }} service not found on {{ inventory_hostname }}"
       when: 
         - service_info.display_name is undefined
         - exec_rc != 301 and exec_rc != 302 and exec_rc != 303
@@ -82,7 +82,7 @@
               - "*************************************************"
               - "service_action: {{ service_action | default('') }}"
               - "service_name: {{ service_name }}"
-              - "affected_host: {{ affected_host }}"
+              - "inventory_hostname: {{ inventory_hostname }}"
               - "start_mode: {{ start_mode | default('') }}"
               - "*************************************************"
       
@@ -126,7 +126,7 @@
             exec_changed: false
             exec_rc: 1
             exec_message: "Service: {{ service_name }} - Action: {{ service_action | default('not defined') }} - Start mode: {{ start_mode | default('not defined') }} 
-              on {{ affected_host }} - FAILED"
+              on {{ inventory_hostname }} - FAILED"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_start_output is failed or mng_state_output is failed or mng_start_output is failed
@@ -148,7 +148,7 @@
             exec_changed: false
             exec_rc: 0
             exec_message: "Service: {{ service_name }} is already {{ service_action }} and already {{ start_mode }}
-              on {{ affected_host }} - SUCCESS"
+              on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_start_output is not skipped
@@ -161,7 +161,7 @@
             exec_changed: true
             exec_rc: 0
             exec_message: "Service: {{ service_name }} - Action: {{ service_action }} - Mode: {{ start_mode }}
-              on {{ affected_host }} - SUCCESS"
+              on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_start_output is not skipped
@@ -175,7 +175,7 @@
             exec_changed: false
             exec_rc: 0
             exec_message: "Service: {{ service_name }} already {{ service_action }}
-              on {{ affected_host }} - SUCCESS"
+              on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_output is not skipped
@@ -188,7 +188,7 @@
             exec_changed: true
             exec_rc: 0
             exec_message: "Service: {{ service_name }} - Action: {{ service_action }}
-              on {{ affected_host }} - SUCCESS"
+              on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_state_output is not skipped
@@ -201,7 +201,7 @@
             exec_changed: false
             exec_rc: 0
             exec_message: "Service: {{ service_name }} start_mode already {{ start_mode }}
-              on {{ affected_host }} - SUCCESS"
+              on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_start_output is not skipped
@@ -214,7 +214,7 @@
             exec_changed: true
             exec_rc: 0
             exec_message: "Service: {{ service_name }} - Mode: {{ start_mode }}
-              on {{ affected_host }} - SUCCESS"
+              on {{ inventory_hostname }} - SUCCESS"
             exec_automation: "sra_manage_service_windows"
           when: 
             - mng_start_output is not skipped
