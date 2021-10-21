@@ -60,7 +60,6 @@
       win_service:
         name: "{{ service_name }}"
       register: service_info
-      no_log: true
       ignore_errors: true
       when: exec_rc != 301 and exec_rc != 302 and exec_rc != 303
 
@@ -79,12 +78,11 @@
         - name: Show variables before performing task
           debug:
             msg:
-              - "*************************************************"
               - "service_action: {{ service_action | default('') }}"
               - "service_name: {{ service_name }}"
               - "inventory_hostname: {{ inventory_hostname }}"
               - "start_mode: {{ start_mode | default('') }}"
-              - "*************************************************"
+          ignore_errors: true
       
         - name: Manage service with state and start_mode
           win_service:
