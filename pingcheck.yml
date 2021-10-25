@@ -1,0 +1,132 @@
+---
+# This Playbook Checks Ping Result of Node
+- hosts: all
+  gather_facts: true
+  gather_subset: "!all"
+  ignore_errors: true
+  ignore_unreachable: true
+  tasks:
+    - name: Set facts
+      set_fact:
+        ping_module: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('ping', 'win_ping') }}"
+        method: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('sudo', 'runas') }}"
+        isadmin: >-
+          $u=whoami;$wid=[System.Security.Principal.WindowsIdentity]::GetCurrent();
+          $prp=new-object System.Security.Principal.WindowsPrincipal($wid);
+          $adm=[System.Security.Principal.WindowsBuiltInRole]::Administrator;
+          $IsAdmin=$prp.IsInRole($adm);if($isadmin){write-host administrator}else{write-host $u}
+      ignore_errors: true
+
+    - name: Validate connection and credentials
+      action: >-
+        {{ ping_module }}
+      register: ping_result
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Check raw module
+      raw: hostname;whoami;
+      changed_when: false
+      register: raw_result
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Check Privilege
+      raw: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('whoami', isadmin) }}"
+      become: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('yes', 'no') }}"
+      changed_when: false
+      register: priv_result
+      when: '"ping" in ping_result and ping_result.ping=="pong"'
+      ignore_errors: true
+
+    - name: Check Setup
+      setup:
+        gather_subset: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('!all,!min,python', '!all,!hardware,!network,!virtual,!ohai,!facter') }}"
+      changed_when: false
+      register: setup_result
+      ignore_errors: true
+
+    - name: Touch Report.csv
+      file:
+        state: touch
+        path: /tmp/pingreport.csv
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+      ignore_errors: true
+
+    - name: Update successful Report.csv
+      lineinfile: 
+        path: /tmp/pingreport.csv
+        line: >-
+          {{ inventory_hostname }} , {{ group_names | default('NULL') }} ,
+          {{ ansible_facts.os_family | default('NULL') }} ,
+          {{ raw_result.stdout | default('NULL') | regex_replace('(\r\n)',' , ') | regex_replace('(\n)','') }}
+          {{ priv_result.stdout | default('NULL') | regex_replace('(\r\n)','') | regex_replace('(\n)','') }} ,
+          {% if ansible_facts.os_family != 'Windows' %}
+          Python {{ setup_result.ansible_facts.ansible_python.version_info | default('NULL') | regex_replace('(,)','.') }}
+          {% else %}Powershell {{ setup_result.ansible_facts.ansible_powershell_version | default('NULL') | regex_replace('(,)','.') }} {% endif %}
+        insertafter: EOF
+      delegate_to: localhost
+      when: 'ping_result.ping=="pong"'
+      ignore_errors: true
+
+    - name: Update unreachable Report.csv
+      lineinfile: 
+        path: /tmp/pingreport.csv
+        line: >-
+          {{ inventory_hostname }} , Connectivity Failed ,
+          {{ raw_result.msg | default('NULL') | regex_replace('(\r\n)',' , ') | regex_replace('(\n)','') }}
+        insertafter: EOF
+      delegate_to: localhost
+      when: 'raw_result.unreachable'
+      ignore_errors: true
+
+    - name: Print Report.csv
+      shell: cat /tmp/pingreport.csv;
+      register: report
+      changed_when: false
+      run_once: true
+      delegate_to: localhost
+      ignore_errors: true
+
+    - name: Set facts for event acknowledgement
+      set_fact:
+        slack_token: "{{ lookup('env','s_token') }}"
+        auth_token: "{{ lookup('env','a_token') }}"
+      run_once: true
+      delegate_to: localhost
+      ignore_errors: true
+
+    - name: Send message to slack
+      slack:
+        token: "{{ slack_token }}"
+        attachments:
+          - text: "{{ report.stdout }}" 
+            title: Launched {{ tower_job_id }}
+        channel: "automation"
+        domain: "app.slack.com"
+      run_once: true
+      delegate_to: localhost
+      ignore_errors: true
+
+    - name: Send Report to slack
+      command: curl "https://slack.com/api/files.upload"
+          -F token='{{ auth_token }}' -F initial_comment='Connectivity status(csv) of {{ ansible_limit }}'
+          -F channels='automation' -F title='pingreport'
+          -F file=@'/tmp/pingreport.csv'
+      register: response
+      args:
+        warn: false
+      changed_when: false
+      run_once: true
+      delegate_to: localhost
+      ignore_errors: true
+
+    - debug: 
+        msg: "{{ report.stdout }}"
+      run_once: true
+      ignore_errors: true
+#    - debug: var=hostvars[inventory_hostname]
+#      ignore_errors: true
+              
