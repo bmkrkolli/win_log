@@ -1,7 +1,6 @@
 ---
 - hosts: all
   gather_subset: min
-  become: true
   tasks:
   - name: hostname 
     shell: xsos -o | grep Hostname | awk '{print $2}'
@@ -105,9 +104,9 @@
 
   - name: Generate Report
     copy:
-      content: "{{ hn.stdout }} , {{ up.stdout }} , {{ lavg.stdout }} , {{ cpua.stdout }} , {{ mema.stdout }} , 
-       {{ swap.stdout }} , {{ ccpu.stdout }} , {{ cmem.stdout }} , {{ inodes.stdout }} , {{ rofs.stdout }} , {{ fsh.stdout }} , 
-       {{ vmtv.stdout }} , {{ vmts.stdout }} , {{ snmp.stdout }} , {{ rhr.stdout }} , {{ kv.stdout }} \\n"
+      content: "{{ hn.stdout | default(' ') | default(' ') }} , {{ up.stdout | default(' ') }} , {{ lavg.stdout | default(' ') }} , {{ cpua.stdout | default(' ') }} , {{ mema.stdout | default(' ') }} , 
+       {{ swap.stdout | default(' ') }} , {{ ccpu.stdout | default(' ') }} , {{ cmem.stdout | default(' ') }} , {{ inodes.stdout | default(' ') }} , {{ rofs.stdout | default(' ') }} , {{ fsh.stdout | default(' ') }} , 
+       {{ vmtv.stdout | default(' ') }} , {{ vmts.stdout | default(' ') }} , {{ snmp.stdout | default(' ') }} , {{ rhr.stdout | default(' ') }} , {{ kv.stdout | default(' ') }} \\n"
       dest: "/tmp/hc.csv"
     delegate_to: localhost
     ignore_errors: true
