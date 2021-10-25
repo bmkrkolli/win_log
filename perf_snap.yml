@@ -7,84 +7,101 @@
     shell: xsos -o | grep Hostname | awk '{print $2}'
     register: hn
     changed_when: false
+    ignore_errors: true
 
   - name: uptime 
     shell: xsos -o | grep 'Uptime:' | awk '{$1=""; print $0}'
     register: up
     changed_when: false
+    ignore_errors: true
 
   - name: load average 
     shell: xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}'
     register: lavg
     changed_when: false
+    ignore_errors: true
 
   - name: AVG CPU Util Free % 
     shell: sar -f | grep 'Average:' | awk '{print $8}'
     register: cpua
     changed_when: false
+    ignore_errors: true
 
   - name: AVG Memory Util Used %
     shell: sar -f | grep 'Average:' | awk '{print $4}'
     register: mema
     changed_when: false
+    ignore_errors: true
 
   - name: Current SWAP Util 
     shell: "xsos -m | grep 'Swap:' -A1 | grep -v Swap: | awk '{print $3}' | rev | cut -c 2- | rev | cut -c 2-"
     register: swap
     changed_when: false
+    ignore_errors: true
 
   - name: Current CPU  Util Free 
     shell: sar 3 15 | grep --color=auto 'Average:' | awk '{print $8}'
     register: ccpu
     changed_when: false
+    ignore_errors: true
 
   - name: Current Memory Util Used
     shell: "xsos -m | grep 'excluding Buffers/Cached' | awk '{print $3}' | rev | cut -c 2- | rev | cut -c 2-"
     register: cmem
     changed_when: false
+    ignore_errors: true
 
   - name: Current Inodes Util 
     shell: df -PTi | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}'
     register: inodes
     changed_when: false
+    ignore_errors: true
 
   - name: Read Only FileSystem 
     shell: cat /proc/mounts | grep 'ro,' | grep -v tmpfs
     register: rofs
     changed_when: false
+    ignore_errors: true
 
   - name: FileSystem Above 70%
     shell: df -TPh | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}'
     register: fsh
     changed_when: false
+    ignore_errors: true
 
   - name: VMTools Version
     shell: vmtoolsd -v
     register: vmtv
     changed_when: false
+    ignore_errors: true
 
   - name: VMTools Status
     shell: systemctl status vmtoolsd.service
     register: vmts
     changed_when: false
+    ignore_errors: true
 
   - name: Populate service facts
     service_facts:
+    ignore_errors: true
 
   - name: SNMPD Status
     shell: service snmpd status
     register: snmp
     changed_when: false
+    ignore_errors: true
 
   - name: RedHat Version
     shell: cat /etc/redhat-release
     register: rhr
     changed_when: false
+    ignore_errors: true
 
   - name: Kernal Version
     shell: uname -r
     register: kv
     changed_when: false
+    ignore_errors: true
 
   - name: Generate Report
     copy:
