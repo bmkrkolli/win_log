@@ -115,6 +115,7 @@
     set_fact:
       slack_token: "{{ lookup('env','s_token') }}"
       auth_token: "{{ lookup('env','a_token') }}"
+    no_log: true
     changed_when: false
     ignore_errors: true
 
@@ -127,4 +128,5 @@
     args:
       warn: false
     changed_when: false
+    delegate_to: localhost
     ignore_errors: true
