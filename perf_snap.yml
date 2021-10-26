@@ -122,8 +122,12 @@
     changed_when: false
     ignore_errors: true
 
+  - name: Check status of alertmanager service
+    service_facts:
+    register: service_state
+
   - debug:
-      msg: "{{ vmts.SubState }}  {{ snmp.status.substate }}"
+      var: service_state.ansible_facts.services["alertmanager.service"].state
 
   - name: Update line Report.csv
     lineinfile: 
@@ -137,9 +141,9 @@
         "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
         "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , 
         {{ vmtv.stdout | replace(',',';') }} ,
-        {{ vmts.status.substate | default ('not found') }} , 
-        {{ snmp.status.substate | default ('not found') }} , {{ rhr.stdout }} , 
-        {{ kv.stdout }}
+   #     {{ vmts.status.substate | default ('not found') }} , 
+   #     {{ snmp.status.substate | default ('not found') }} , {{ rhr.stdout }} , 
+   #     {{ kv.stdout }}
       insertafter: EOF
     delegate_to: localhost
     ignore_errors: true
