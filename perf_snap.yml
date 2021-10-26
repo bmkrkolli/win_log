@@ -73,19 +73,19 @@
     ignore_errors: true
 
   - name: Current Inodes Util 
-    shell: df -PTi | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}' | tr '\n' ' >'
+    shell: df -PTi | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}' | tr '\n' ' -'
     register: inodes
     changed_when: false
     ignore_errors: true
 
   - name: Read Only FileSystem 
-    shell: cat /proc/mounts | grep 'ro,' | grep -v tmpfs | tr ',' ';' | tr '\n' ' >'
+    shell: cat /proc/mounts | grep 'ro,' | grep -v tmpfs | tr ',' ';' | tr '\n' ' -'
     register: rofs
     changed_when: false
     ignore_errors: true
 
   - name: FileSystem Above 70%
-    shell: df -TPh | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}' | tr '\n' ' >'
+    shell: df -TPh | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}' | tr '\n' ' -'
     register: fsh
     changed_when: false
     ignore_errors: true
@@ -122,16 +122,24 @@
     changed_when: false
     ignore_errors: true
 
+  - debug:
+      msg: "{{ vmts.status.substate }}"
+
   - name: Update line Report.csv
     lineinfile: 
       path: /tmp/hc.csv
       line: >-
-        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | replace(',',';') }} , 
-        {{ cpua.stdout }} , {{ mema.stdout }} , {{ swap.stdout }} , {{ ccpu.stdout }} , {{ cmem.stdout }} , 
+        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , 
+        {{ lavg.stdout | replace(',',';') }} , {{ cpua.stdout | trim }} , 
+        {{ mema.stdout | trim }} , {{ swap.stdout | trim }} , 
+        {{ ccpu.stdout | trim }} , {{ cmem.stdout | trim }} , 
         "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
         "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
-        "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , {{ vmtv.stdout | replace(',',';') }} ,
-        {{ vmts.status.substate | default ('not found') }} , {{ snmp.status.substate | default ('not found') }} , {{ rhr.stdout }} , {{ kv.stdout }}
+        "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , 
+        {{ vmtv.stdout | replace(',',';') }} ,
+        {{ vmts.status.substate | default ('not found') }} , 
+        {{ snmp.status.substate | default ('not found') }} , {{ rhr.stdout }} , 
+        {{ kv.stdout }}
       insertafter: EOF
     delegate_to: localhost
     ignore_errors: true
