@@ -96,18 +96,20 @@
     changed_when: false
     ignore_errors: true
 
-  - name: VMTools Service Status
-    service:
-      name: vmtoolsd
-    register: vmts
-    changed_when: false
+  - name: Gather Service Facts
+    service_facts:
+    no_log: true
+
+  - name: VMTools Status
+    set_fact:
+      vmts: "{{ ansible_facts.services['vmtoolsd.service'] | string }}"
+    when: ansible_facts.services['vmtoolsd.service'] is defined
     ignore_errors: true
 
-  - name: SNMPD Service Status
-    service:
-      name: snmpd
-    register: snmp
-    changed_when: false
+  - name: SNMP Status
+    set_fact:
+      snmp: "{{ ansible_facts.services['snmpd.service'] | string }}"
+    when: ansible_facts.services['snmpd.service'] is defined
     ignore_errors: true
 
   - name: RedHat Version
@@ -121,15 +123,6 @@
     register: kv
     changed_when: false
     ignore_errors: true
-
-  - name: Check status of alertmanager service
-    service_facts:
-    register: service_state
-
-  - debug:
-      var: 
-        - service_state.ansible_facts.services['vmtoolsd.service']
-        - service_state.ansible_facts.services['snmpd.service']
 
   - name: Update line Report.csv
     lineinfile: 
