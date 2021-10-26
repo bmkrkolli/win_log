@@ -116,7 +116,7 @@
     lineinfile: 
       path: /tmp/hc.csv
       line: >-
-        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | b64decode | replace(',',';') }} , 
+        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | string | replace(',',';') }} , 
         {{ cpua.stdout | replace(',',';') }} , {{ mema.stdout | replace(',',';') }} , {{ swap.stdout | replace(',',';') }} , 
         {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , 
         "{{ inodes.stdout | default ('not found') | replace(',',';') | replace('\n', '') }}" ,
