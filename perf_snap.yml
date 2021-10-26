@@ -96,8 +96,18 @@
     changed_when: false
     ignore_errors: true
 
-  - name: Populate service facts
-    service_facts:
+  - name: VMTools Service Status
+    service:
+      name: vmtoolsd
+    register: vmts
+    changed_when: false
+    ignore_errors: true
+
+  - name: SNMPD Service Status
+    service:
+      name: snmpd
+    register: snmp
+    changed_when: false
     ignore_errors: true
 
   - name: RedHat Version
@@ -121,8 +131,7 @@
         "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
         "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
         "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , {{ vmtv.stdout | replace(',',';') }} ,
-        {{ ansible_facts.services['vmtoolsd'].state | default 'not found' }} , 
-        {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}
+        {{ vmts | default ('not found') }} , {{ snmp | default ('not found') }} , {{ rhr | default 'not found' }} , {{ kv }}
       insertafter: EOF
     delegate_to: localhost
     ignore_errors: true
