@@ -122,7 +122,6 @@
         {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}"
       insertafter: EOF
     delegate_to: localhost
-    run_once: true
     ignore_errors: true
 
   - name: Set facts for event acknowledgement
