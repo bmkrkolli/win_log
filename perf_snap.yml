@@ -116,11 +116,11 @@
     lineinfile: 
       path: /tmp/hc.csv
       line: >-
-        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | replace(',',';') }} , 
+        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | to_string | replace(',',';') }} , 
         {{ cpua.stdout | replace(',',';') }} , {{ mema.stdout | replace(',',';') }} , {{ swap.stdout | replace(',',';') }} , 
-        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} ,
-    #{{ inodes | default 'not found' }} , {{ rofs | default 'not found' }} , 
-    #    {{ fsh | default 'not found' }} , {{ vmtv }} , {{ ansible_facts.services['vmtoolsd'].state }} , 
+        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , "{{ inodes | default ('not found') }}" ,
+        "{{ rofs | default ('not found') }}" , "{{ fsh | default ('not found') }}" , {{ vmtv | replace(',',';') }} ,
+    #     , {{ vmtv }} , {{ ansible_facts.services['vmtoolsd'].state }} , 
     #    {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}"
       insertafter: EOF
     delegate_to: localhost
