@@ -116,10 +116,12 @@
     lineinfile: 
       path: /tmp/hc.csv
       line: >-
-        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | replace(',',';') }} , 
+        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | b64decode | replace(',',';') }} , 
         {{ cpua.stdout | replace(',',';') }} , {{ mema.stdout | replace(',',';') }} , {{ swap.stdout | replace(',',';') }} , 
-        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , "{{ inodes.stdout | default ('not found') }}" ,
-        "{{ rofs.stdout | default ('not found') }}" , "{{ fsh.stdout | default ('not found') }}" , {{ vmtv.stdout | replace(',',';') }} ,
+        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , 
+        "{{ inodes.stdout | default ('not found') | replace(',',';') | replace('\n', '') }}" ,
+        "{{ rofs.stdout | default ('not found') | replace(',',';') | replace('\n', '') }}" , 
+        "{{ fsh.stdout | default ('not found') | replace(',',';') | replace('\n', '') }}" , {{ vmtv.stdout | replace(',',';') }} ,
     #     , {{ vmtv }} , {{ ansible_facts.services['vmtoolsd'].state }} , 
     #    {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}"
       insertafter: EOF
