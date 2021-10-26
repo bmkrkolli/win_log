@@ -127,7 +127,7 @@
     ignore_errors: true
 
   - debug:
-      msg: "{{ lavg.stdout | encoded | b64decode(encoding='utf-16-le') }}"
+      msg: "{{ lavg.stdout | b64decode(encoding='utf-8') }}"
 
   - name: Update line Report.csv
     lineinfile: 
