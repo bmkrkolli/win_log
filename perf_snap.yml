@@ -37,7 +37,7 @@
     ignore_errors: true
 
   - name: load average 
-    shell: xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}' | tr ',' ';' | iconv -t "UTF-8"
+    shell: echo `xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}' | tr ',' ';'`
     register: lavg
     changed_when: false
     ignore_errors: true
