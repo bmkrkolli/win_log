@@ -142,4 +142,6 @@
     args:
       warn: false
     changed_when: false
+    delegate_to: localhost
+    run_once: true
     ignore_errors: true
