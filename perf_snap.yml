@@ -131,7 +131,7 @@
       path: /tmp/hc.csv
       line: >-
         {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , 
-        {{ lavg.stdout | regex_replace('\\u001b[.*;.*m', '') }} , {{ cpua.stdout | trim }} , 
+        {{ lavg.stdout | regex_replace('\u001b.*m', '') }} , {{ cpua.stdout | trim }} , 
         {{ mema.stdout | trim }} , {{ swap.stdout | trim }} , 
         {{ ccpu.stdout | trim }} , {{ cmem.stdout | trim }} , 
         "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
