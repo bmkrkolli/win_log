@@ -123,7 +123,7 @@
     ignore_errors: true
 
   - debug:
-      msg: "{{ vmts.status.substate }}"
+      msg: "{{ vmts.status }}  {{ snmp.status }}"
 
   - name: Update line Report.csv
     lineinfile: 
