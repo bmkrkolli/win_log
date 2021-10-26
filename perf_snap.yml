@@ -126,6 +126,9 @@
     changed_when: false
     ignore_errors: true
 
+  - debug:
+      msg: "{{ lavg.stdout | regex_replace('\u001b.*m', '') }}"
+
   - name: Update line Report.csv
     lineinfile: 
       path: /tmp/hc.csv
