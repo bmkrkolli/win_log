@@ -102,14 +102,16 @@
 
   - name: VMTools Status
     set_fact:
-      vmts: "{{ ansible_facts.services['vmtoolsd.service'] | string }}"
-    when: ansible_facts.services['vmtoolsd.service'] is defined
+      vmts: "{% if ansible_facts.services['vmtoolsd.service'] is defined %}
+         {{ ansible_facts.services['vmtoolsd.service'] | string }}{% else %}
+         VMTools Not Found {% endif %}" 
     ignore_errors: true
 
   - name: SNMP Status
     set_fact:
-      snmp: "{{ ansible_facts.services['snmpd.service'] | string }}"
-    when: ansible_facts.services['snmpd.service'] is defined
+      snmp: "{% if ansible_facts.services['snmpd.service'] is defined %}
+         {{ ansible_facts.services['snmpd.service'] | string }}{% else %}
+         SNMPD Not Found {% endif %}" 
     ignore_errors: true
 
   - name: RedHat Version
@@ -135,10 +137,8 @@
         "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
         "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
         "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , 
-        {{ vmtv.stdout | replace(',',';') }} ,
-   #     {{ vmts.status.substate | default ('not found') }} , 
-   #     {{ snmp.status.substate | default ('not found') }} , {{ rhr.stdout }} , 
-   #     {{ kv.stdout }}
+        {{ vmtv.stdout | replace(',',';') }} , {{ vmts | replace(',',';') }} , 
+        {{ snmp | replace(',',';') }} , {{ rhr.stdout }} , {{ kv.stdout }}
       insertafter: EOF
     delegate_to: localhost
     ignore_errors: true
