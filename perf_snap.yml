@@ -37,7 +37,7 @@
     ignore_errors: true
 
   - name: load average 
-    shell: xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}'
+    shell: xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}' | tr ',' ';'
     register: lavg
     changed_when: false
     ignore_errors: true
@@ -73,19 +73,19 @@
     ignore_errors: true
 
   - name: Current Inodes Util 
-    shell: df -PTi | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}'
+    shell: df -PTi | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}' | tr '\n' ' >'
     register: inodes
     changed_when: false
     ignore_errors: true
 
   - name: Read Only FileSystem 
-    shell: cat /proc/mounts | grep 'ro,' | grep -v tmpfs
+    shell: cat /proc/mounts | grep 'ro,' | grep -v tmpfs | tr ',' ';' | tr '\n' ' >'
     register: rofs
     changed_when: false
     ignore_errors: true
 
   - name: FileSystem Above 70%
-    shell: df -TPh | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}'
+    shell: df -TPh | awk '0+$6 >= 70 {print}' | awk '{print $6" ""==>"" "$7}' | tr '\n' ' >'
     register: fsh
     changed_when: false
     ignore_errors: true
@@ -116,14 +116,13 @@
     lineinfile: 
       path: /tmp/hc.csv
       line: >-
-        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | replace(',',';') | replace('\u001b','')}} , 
-        {{ cpua.stdout | replace(',',';') }} , {{ mema.stdout | replace(',',';') }} , {{ swap.stdout | replace(',',';') }} , 
-        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , 
-        "{{ inodes.stdout | default ('not found') | replace(',',';') | replace('\n', ';') }}" ,
-        "{{ rofs.stdout | default ('not found') | replace(',',';') | replace('\n', ';') }}" , 
-        "{{ fsh.stdout | default ('not found') | replace(',',';') | replace('\n', ';') }}" , {{ vmtv.stdout | replace(',',';') }} ,
-    #     , {{ vmtv }} , {{ ansible_facts.services['vmtoolsd'].state }} , 
-    #    {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}"
+        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | replace(',',';') }} , 
+        {{ cpua.stdout }} , {{ mema.stdout }} , {{ swap.stdout }} , {{ ccpu.stdout }} , {{ cmem.stdout }} , 
+        "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
+        "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
+        "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , {{ vmtv.stdout | replace(',',';') }} ,
+        {{ ansible_facts.services['vmtoolsd'].state | default 'not found' }} , 
+        {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}
       insertafter: EOF
     delegate_to: localhost
     ignore_errors: true
