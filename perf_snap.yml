@@ -43,13 +43,13 @@
     ignore_errors: true
 
   - name: AVG CPU Util Free % 
-    shell: sar -f | grep 'Average:' | awk '{print $8}' | tr '\n' ', '
+    shell: sar -f | grep 'Average:' | awk '{print $8}' | tr '\n' '; '
     register: cpua
     changed_when: false
     ignore_errors: true
 
   - name: AVG Memory Util Used %
-    shell: sar -f | grep 'Average:' | awk '{print $4}' | tr '\n' ', '
+    shell: sar -f | grep 'Average:' | awk '{print $4}' | tr '\n' '; '
     register: mema
     changed_when: false
     ignore_errors: true
@@ -61,7 +61,7 @@
     ignore_errors: true
 
   - name: Current CPU  Util Free 
-    shell: sar 3 15 | grep --color=auto 'Average:' | awk '{print $8}'
+    shell: sar 3 15 | grep --color=auto 'Average:' | awk '{print $8}' | tr '\n' '; '
     register: ccpu
     changed_when: false
     ignore_errors: true
