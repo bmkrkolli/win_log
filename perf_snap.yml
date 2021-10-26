@@ -118,8 +118,8 @@
       line: >-
         {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , {{ lavg.stdout | replace(',',';') }} , 
         {{ cpua.stdout | replace(',',';') }} , {{ mema.stdout | replace(',',';') }} , {{ swap.stdout | replace(',',';') }} , 
-        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , "{{ inodes | default ('not found') }}" ,
-        "{{ rofs | default ('not found') }}" , "{{ fsh | default ('not found') }}" , {{ vmtv | replace(',',';') }} ,
+        {{ ccpu.stdout | replace(',',';') }} , {{ cmem.stdout | replace(',',';') }} , "{{ inodes.stdout | default ('not found') }}" ,
+        "{{ rofs.stdout | default ('not found') }}" , "{{ fsh.stdout | default ('not found') }}" , {{ vmtv.stdout | replace(',',';') }} ,
     #     , {{ vmtv }} , {{ ansible_facts.services['vmtoolsd'].state }} , 
     #    {{ ansible_facts.services['snmpd'].state | default 'not found' }} , {{ rhr | default 'not found' }} , {{ kv }}"
       insertafter: EOF
