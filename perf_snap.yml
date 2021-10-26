@@ -127,7 +127,7 @@
     ignore_errors: true
 
   - debug:
-      msg: "{{ lavg.stdout | regex_replace('\u001b.*m', '') }}"
+      msg: "{{ lavg.stdout | encoded | b64decode(encoding='utf-16-le') }}"
 
   - name: Update line Report.csv
     lineinfile: 
