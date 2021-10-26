@@ -131,7 +131,7 @@
         "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
         "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
         "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , {{ vmtv.stdout | replace(',',';') }} ,
-        {{ vmts | default ('not found') }} , {{ snmp | default ('not found') }} , {{ rhr | default 'not found' }} , {{ kv }}
+        {{ vmts.status.substate | default ('not found') }} , {{ snmp.status.substate | default ('not found') }} , {{ rhr.stdout }} , {{ kv.stdout }}
       insertafter: EOF
     delegate_to: localhost
     ignore_errors: true
