@@ -126,16 +126,14 @@
     changed_when: false
     ignore_errors: true
 
-  - debug:
-      msg: "{{ lavg.stdout | regex_replace('\\[[0-9]\\;[0-9]+m') | replace('\u001b', '') }}"
-
   - name: Update line Report.csv
     lineinfile: 
       path: /tmp/hc.csv
       line: >-
         {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , 
-        {{ lavg.stdout | trim }} , {{ cpua.stdout | trim }} , {{ mema.stdout | trim }} , 
-        {{ swap.stdout | trim }} , {{ ccpu.stdout | trim }} , {{ cmem.stdout | trim }} , 
+        {{ lavg.stdout | regex_replace('\\[[0-9]\\;[0-9]+m') | replace('\u001b', '') | trim }} , 
+        {{ cpua.stdout | trim }} , {{ mema.stdout | trim }} , {{ swap.stdout | trim }} , 
+        {{ ccpu.stdout | trim }} , {{ cmem.stdout | trim }} , 
         "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
         "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
         "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , 
