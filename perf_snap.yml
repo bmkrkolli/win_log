@@ -37,7 +37,7 @@
     ignore_errors: true
 
   - name: load average 
-    shell: echo `xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}' | tr ',' ';'`
+    shell: xsos -o | grep 'LoadAvg:' | awk '{$1=""; print $0}' | tr ',' ';'
     register: lavg
     changed_when: false
     ignore_errors: true
@@ -125,6 +125,9 @@
     register: kv
     changed_when: false
     ignore_errors: true
+
+  - debug:
+      msg: "{{ lavg.stdout | regex_replace('^[.*;.*m(.*)$', ' \\1') }}"
 
   - name: Update line Report.csv
     lineinfile: 
