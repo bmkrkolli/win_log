@@ -127,7 +127,7 @@
     ignore_errors: true
 
   - debug:
-      msg: "{{ lavg.stdout | regex_replace('^[0;0m$', '') }}"
+      msg: "{{ lavg.stdout | regex_replace('[0;0m', '') }}"
 
   - name: Update line Report.csv
     lineinfile: 
