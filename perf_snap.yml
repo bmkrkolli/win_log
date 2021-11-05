@@ -147,6 +147,19 @@
     delegate_to: localhost
     ignore_errors: true
 
+  - name: stats
+    set_stats: 
+      csvformat: >-
+        {{ hn.stdout | replace(',',';') }} , {{ up.stdout | replace(',',';') }} , 
+        {{ load | trim }} , {{ cpua.stdout | trim }} , {{ mema.stdout | trim }} , 
+        {{ swap.stdout | trim }} , {{ ccpu.stdout | trim }} , {{ cmem.stdout | trim }} , 
+        "{{ inodes.stdout | default ('not found') | replace(',',';') }}" ,
+        "{{ rofs.stdout | default ('not found') | replace(',',';') }}" , 
+        "{{ fsh.stdout | default ('not found') | replace(',',';') }}" , 
+        {{ vmtv.stdout | replace(',',';') }} , {{ vmts | replace(',',';') | trim }} , 
+        {{ snmp | replace(',',';') | trim }} , {{ rhr.stdout }} , {{ kv.stdout }}
+    ignore_errors: true
+
   - name: Set facts for event acknowledgement
     set_fact:
       slack_token: "{{ lookup('env','s_token') }}"
