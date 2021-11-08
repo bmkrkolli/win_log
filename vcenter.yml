@@ -17,5 +17,15 @@
       password: "{{ lookup('env','VMWARE_PASSWORD') }}"
       datacenter: kdc
       validate_certs: no
+    register: cluster_facts
+    delegate_to: localhost
+
+  - name: Gather info about all ESXi Host in given Cluster
+    vmware_host_config_info:
+      hostname: "{{ lookup('env','VMWARE_HOST') }}"
+      username: "{{ lookup('env','VMWARE_USER') }}"
+      password: "{{ lookup('env','VMWARE_PASSWORD') }}"
+      cluster_name: klc
+      validate_certs: no
     register: host_facts
     delegate_to: localhost
