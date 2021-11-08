@@ -1,0 +1,65 @@
+---
+- hosts: all
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+  tasks:
+    - name: Set facts
+      set_fact:
+        host_reachable: false
+        host_exist: true
+        ping_module: >-
+          "{% if 'indows' in group_names %}win_ping{% else %}ping{% endif %}"
+        shell_module: >-
+          "{% if 'indows' in group_names %}win_shell{% else %}shell{% endif %}"
+        method: >-
+          "{% if 'indows' in group_names %}runas{% else %}sudo{% endif %}"
+        isadmin: >-
+          whoami;$wid=[System.Security.Principal.WindowsIdentity]::GetCurrent();
+          $prp=new-object System.Security.Principal.WindowsPrincipal($wid);
+          $adm=[System.Security.Principal.WindowsBuiltInRole]::Administrator;
+          $IsAdmin=$prp.IsInRole($adm);write-host Administrator: $isadmin;
+      ignore_errors: true
+
+    - debug: var=group_names
+      ignore_errors: true
+
+    - name: Validate connection and credentials
+      action: >-
+        {{ ping_module }}
+      register: ping_result
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Check raw module
+      raw: hostname;whoami;
+      changed_when: false
+      register: raw_result
+      ignore_errors: true
+      ignore_unreachable: true
+
+    - name: Check Privilege
+      raw: "{{ group_names != 'windows') | ternary('whoami', isadmin) }}"
+      become: "{{ group_names != 'windows') | ternary('yes', 'no') }}"
+      changed_when: false
+      register: priv_result
+      ignore_errors: true
+
+    - name: Able to reach Node
+      set_fact:
+        host_reachable: true
+        job_msg: >-
+              "{{ ping_module }} > {{ hostvars['localhost']['host_ip'] }} is reachable"
+      when: 
+        - '"ping" in ping_result and ping_result.ping=="pong"'
+        - raw_result.rc == 0    
+      ignore_errors: true
+
+    - name: Unable to reach Node
+      set_fact:
+        host_reachable: false
+        job_msg: >-
+              "Failed, {{ ping_module }} > {{ hostvars['localhost']['host_ip'] }} is not reachable"
+      when: ping_result.unreachable or raw_result.unreachable
+      ignore_errors: true
+              
