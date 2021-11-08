@@ -9,11 +9,11 @@
         host_reachable: false
         host_exist: true
         ping_module: >-
-          "{% if 'indows' in group_names %}win_ping{% else %}ping{% endif %}"
+          "{% if group_names == 'windows' %}win_ping{% else %}ping{% endif %}"
         shell_module: >-
-          "{% if 'indows' in group_names %}win_shell{% else %}shell{% endif %}"
+          "{% if group_names == 'windows' %}win_shell{% else %}shell{% endif %}"
         method: >-
-          "{% if 'indows' in group_names %}runas{% else %}sudo{% endif %}"
+          "{% if group_names == 'windows' %}runas{% else %}sudo{% endif %}"
         isadmin: >-
           whoami;$wid=[System.Security.Principal.WindowsIdentity]::GetCurrent();
           $prp=new-object System.Security.Principal.WindowsPrincipal($wid);
