@@ -2,12 +2,20 @@
 - hosts: all
   gather_facts: false
   tasks:
-  - name: Gather vmware host facts from vCenter with tag information
-    vmware_host_facts:
+  - name: Provide information about vCenter
+    vmware_about_info:
       hostname: "{{ lookup('env','VMWARE_HOST') }}"
       username: "{{ lookup('env','VMWARE_USER') }}"
       password: "{{ lookup('env','VMWARE_PASSWORD') }}"
-      show_tag: True
+    delegate_to: localhost
+    register: vcenter_about_info
+
+  - name: Gather cluster facts from vCenter
+    vmware_cluster_info:
+      hostname: "{{ lookup('env','VMWARE_HOST') }}"
+      username: "{{ lookup('env','VMWARE_USER') }}"
+      password: "{{ lookup('env','VMWARE_PASSWORD') }}"
+      datacenter: kdc
       validate_certs: no
     register: host_facts
     delegate_to: localhost
