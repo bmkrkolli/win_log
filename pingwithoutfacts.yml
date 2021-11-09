@@ -32,7 +32,27 @@
     - name: Unable to reach Node
       set_fact:
         host_reachable: false
-        job_msg: "Failed, {{ inventory_hostname }} is not reachable"
-      when: raw_result.unreachable
+        job_msg: "Failed, {{ inventory_hostname }} is not reachable, Incorrect credentials"
+      when: raw_result.unreachable and ('password' in raw_result.msg or 'credentials' in raw_result.msg)
       ignore_errors: true
-              
+
+    - name: Unable to reach Node
+      set_fact:
+        host_reachable: false
+        job_msg: "Failed, {{ inventory_hostname }} is not reachable, Port not open"
+      when: raw_result.unreachable and ('port' in raw_result.msg)
+      ignore_errors: true
+
+    - name: Gather Facts
+      setup: 
+        gather_subset: min
+      when: host_reachable   
+      ignore_errors: true
+
+    - name: Check Privilege
+      raw: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('whoami', isadmin) }}"
+      become: "{{ (ansible_facts['os_family'] != 'Windows') | ternary('yes', 'no') }}"
+      changed_when: false
+      register: priv_result
+      when: host_reachable
+      ignore_errors: true
