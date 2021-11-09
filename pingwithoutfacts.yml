@@ -56,3 +56,9 @@
       register: priv_result
       when: host_reachable
       ignore_errors: true
+
+    - name: stats
+      set_stats: 
+        data:
+          csvformat: "{{ job_msg }}"
+      ignore_errors: true
