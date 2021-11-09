@@ -25,7 +25,7 @@
     - name: Able to reach Node
       set_fact:
         host_reachable: true
-        job_msg: "Success, {{ inventory_hostanme }} is reachable"
+        job_msg: "Success, {{ inventory_hostname }} is reachable"
       when: raw_result.rc == 0    
       ignore_errors: true
 
