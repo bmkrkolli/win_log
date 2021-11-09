@@ -39,7 +39,7 @@
     - name: Unable to reach Node
       set_fact:
         host_reachable: false
-        job_msg: "Failed, {{ inventory_hostname }} is not reachable, Port not open"
+        job_msg: "Failed, {{ inventory_hostname }} is not reachable, Network Issue"
       when: raw_result.unreachable and ('port' in raw_result.msg)
       ignore_errors: true
 
