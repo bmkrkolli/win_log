@@ -59,10 +59,10 @@
     - name: set profiles properly
       set_fact:
         fw_ruleprofiles: "{% if fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
-          [Domain, Public, Private]{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-          [Domain, Private]{% elif fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
-          [Domain, Public]{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-          [Public, Private]{% elif not fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
+          Domain, Public, Private{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
+          Domain, Private{% elif fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
+          Domain, Public{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
+          Public, Private{% elif not fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
           Domain{% elif fw_ruledomain and not fw_ruleprivate and not fw_rulepublic %}
           Private{% elif not fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
           Public{% elif not fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
@@ -131,7 +131,7 @@
 
     - name: Perform action to configure Firewall Rule
       block:
-        - name: "Set permission {{ file_prem }} to {{ file_name }}"
+        - name: "Configure Firewall Rule"
           win_firewall_rule:
             name: "{{ fw_rulename }}"
             action: "{{ fw_ruleaction }}"
