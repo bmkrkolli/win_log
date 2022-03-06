@@ -4,191 +4,192 @@
 # Role/Playbook Name: sra_config_firewall_rule_windows 
 #########################################
 ---
-- name: Initialize variables
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 1
-    exec_message: "The initial status didn't change during the execution of
-     the playbook."
-    exec_automation: "sra_config_firewall_rule_windows"
-
-
-- name: Set facts on error - name variable is empty
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 301
-    exec_message: "Name variable is empty or invalid."
-  when: fw_rulename is undefined or fw_rulename == 'not_found'
-
-- name: Set facts on error - action variable empty or invalid
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 302
-    exec_message: "Action is not valid. 'allow' or 'block' is valid values"
-  when: 
-    - exec_rc != 301 
-    - fw_ruleaction is undefined or 
-      (fw_ruleaction != "allow" and fw_ruleaction != "block" and fw_ruleaction == 'not_found')
-
-- name: Set facts on error - direction variable empty or invalid
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 303
-    exec_message: "Direction is not valid. 'in' or 'out' is valid value"
-  when: 
-    - exec_rc != 301
-    - fw_ruledirection is undefined or 
-      (fw_ruledirection != "in" and fw_ruledirection != "out" and fw_ruledirection == 'not_found')
-
-- name: Set facts on error - enable variable empty or invalid
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 304
-    exec_message: "Enabled is not valid. 'yes' or 'no' is valid value"
-  when: 
-    - exec_rc != 301
-    - fw_ruleenabled is undefined or 
-      (fw_ruleenabled != "yes" and fw_ruleenabled != "no" and fw_ruleenabled == 'not_found')
-
-- name: set profiles properly
-  set_fact:
-    fw_ruleprofiles: "{% if fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
-      [Domain, Public, Private]{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-      [Domain, Private]{% elif fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
-      [Domain, Public]{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-      [Public, Private]{% elif not fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
-      Domain{% elif fw_ruledomain and not fw_ruleprivate and not fw_rulepublic %}
-      Private{% elif not fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-      Public{% elif not fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
-      {% else %}unkown{% endif %}"
-  when: 
-    - exec_rc != 301
-    - fw_ruledomain is defined and fw_ruleprivate is defined and fw_rulepublic is defined
-
-- name: Set facts on error - profile is empty
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 305
-    exec_message: "Profile is Empty. Set atleast one profile within Domain, Private, Public"
-  when: 
-    - exec_rc != 301
-    - fw_ruleprofiles is undefined or fw_ruleprofiles == 'unknown'
-
-- name: Set facts on error - Protocol variable empty or invalid
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 306
-    exec_message: "Protocol is not valid."
-  when: 
-    - exec_rc != 301 
-    - fw_ruleprotocol is undefined
-
-- name: Set facts on error - state variable empty or invalid
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 307
-    exec_message: "State is not valid. 'present' or 'absent' is valid value"
-  when: 
-    - exec_rc != 301 
-    - fw_rulestate is undefined or 
-      (fw_rulestate != "absent" and fw_ruleaction != "present" and fw_rulestate == 'not_found')
-
-- name: Set facts on error - Port variable empty or invalid
-  set_fact:
-    exec_success: false
-    exec_changed: false
-    exec_rc: 308
-    exec_message: "Port is not valid."
-  when: 
-    - exec_rc != 301 
-    - fw_rulelocalport is undefined or fw_rulelocalport == 'not_found'
-
-- name: Show variables
-  debug:
-    msg:
-      - "name: {{ fw_rulename }}"
-      - "action: {{ fw_ruleaction }}"
-      - "direction: {{ fw_ruledirection }}"
-      - "enabled: {{ fw_ruleenabled }}"
-      - "profiles: {{ fw_ruleprofiles }}"
-      - "protocol: {{ fw_ruleprotocol }}"
-      - "state: {{ fw_rulestate }}"
-      - "localport: {{ fw_rulelocalport }}"
-      - "localip: {{ fw_rulelocalip }}"
-      - "remoteip: {{ fw_ruleremoteip }}"
-      - "remoteport: {{ fw_ruleremoteport }}"
-      - "program: {{ fw_ruleprogram }}"
-      - "service: {{ fw_ruleservice }}"
-
-- name: Perform action to configure Firewall Rule
-  block:
-    - name: "Set permission {{ file_prem }} to {{ file_name }}"
-      win_firewall_rule:
-        name: "{{ fw_rulename }}"
-        action: "{{ fw_ruleaction }}"
-        direction: "{{ fw_ruledirection }}"
-        enabled: "{{ fw_ruleenabled }}"
-        profiles: "{{ fw_ruleprofiles | trim }}"
-        protocol: "{{ fw_ruleprotocol | default('any') }}"
-        state: "{{ fw_rulestate }}"
-        localport: "{{ fw_rulelocalport }}"
-        localip: "{{ fw_rulelocalip | default('any') }}"
-        remoteip: "{{ fw_ruleremoteip | default('any') }}"
-        remoteport: "{{ fw_ruleremoteport | default('any') }}"
-        program: "{{ fw_ruleprogram | default('any') }}"
-        service: "{{ fw_ruleservice | default('any') }}"
-      register: fw_rule
-      ignore_errors: true
-
-    - name: "Set facts on error"
+- hosts: all:!localhost
+  gather_facts: false
+  tasks:
+    - name: Initialize variables
       set_fact:
         exec_success: false
-        exec_changed: false 
+        exec_changed: false
         exec_rc: 1
-        exec_message: "Failed to configure firewall rule"
+        exec_message: "The initial status didn't change during the execution of the playbook."
         exec_automation: "sra_config_firewall_rule_windows"
-      when: 
-        - fw_rule.failed
 
-    - name: "Set facts on success - already in desired state"
-      set_fact: 
-        exec_success: true
-        exec_changed: false 
-        exec_rc: 0
-        exec_message: "Firewall Rule already exists"
-        exec_automation: "sra_config_firewall_rule_windows"
-      when: 
-        - not fw_rule.failed
-        - not fw_rule.changed
+    - name: Set facts on error - name variable is empty
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 301
+        exec_message: "Name variable is empty or invalid."
+      when: fw_rulename is undefined or fw_rulename == 'not_found'
 
-    - name: "Set facts on success - state changed"
-      set_fact: 
-        exec_success: true
-        exec_changed: true 
-        exec_rc: 0
-        exec_message: "Successfully configured Firewall Rule"
-        exec_automation: "sra_config_firewall_rule_windows"
+    - name: Set facts on error - action variable empty or invalid
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 302
+        exec_message: "Action is not valid. 'allow' or 'block' is valid values"
       when: 
-        - not fw_rule.failed
-        - fw_rule.changed
-  when: 
-    - exec_rc != 301
-    - exec_rc != 302
-    - exec_rc != 303
-    - exec_rc != 304
-    - exec_rc != 305
-    - exec_rc != 306
-    - exec_rc != 307
-    - exec_rc != 308
+        - exec_rc != 301 
+        - fw_ruleaction is undefined or 
+          (fw_ruleaction != "allow" and fw_ruleaction != "block" and fw_ruleaction == 'not_found')
 
-- name: "Configure Firewall Rule Ouput"
-  debug: 
-    msg: "RC: {{ exec_rc }}; {{ exec_message }}; {{ fw_rule.stdout }}"
+    - name: Set facts on error - direction variable empty or invalid
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 303
+        exec_message: "Direction is not valid. 'in' or 'out' is valid value"
+      when: 
+        - exec_rc != 301
+        - fw_ruledirection is undefined or 
+          (fw_ruledirection != "in" and fw_ruledirection != "out" and fw_ruledirection == 'not_found')
+
+    - name: Set facts on error - enable variable empty or invalid
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 304
+        exec_message: "Enabled is not valid. 'yes' or 'no' is valid value"
+      when: 
+        - exec_rc != 301
+        - fw_ruleenabled is undefined or 
+          (fw_ruleenabled != "yes" and fw_ruleenabled != "no" and fw_ruleenabled == 'not_found')
+
+    - name: set profiles properly
+      set_fact:
+        fw_ruleprofiles: "{% if fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
+          [Domain, Public, Private]{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
+          [Domain, Private]{% elif fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
+          [Domain, Public]{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
+          [Public, Private]{% elif not fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
+          Domain{% elif fw_ruledomain and not fw_ruleprivate and not fw_rulepublic %}
+          Private{% elif not fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
+          Public{% elif not fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
+          {% else %}unkown{% endif %}"
+      when: 
+        - exec_rc != 301
+        - fw_ruledomain is defined and fw_ruleprivate is defined and fw_rulepublic is defined
+
+    - name: Set facts on error - profile is empty
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 305
+        exec_message: "Profile is Empty. Set atleast one profile within Domain, Private, Public"
+      when: 
+        - exec_rc != 301
+        - fw_ruleprofiles is undefined or fw_ruleprofiles == 'unknown'
+
+    - name: Set facts on error - Protocol variable empty or invalid
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 306
+        exec_message: "Protocol is not valid."
+      when: 
+        - exec_rc != 301 
+        - fw_ruleprotocol is undefined
+
+    - name: Set facts on error - state variable empty or invalid
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 307
+        exec_message: "State is not valid. 'present' or 'absent' is valid value"
+      when: 
+        - exec_rc != 301 
+        - fw_rulestate is undefined or 
+          (fw_rulestate != "absent" and fw_ruleaction != "present" and fw_rulestate == 'not_found')
+
+    - name: Set facts on error - Port variable empty or invalid
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 308
+        exec_message: "Port is not valid."
+      when: 
+        - exec_rc != 301 
+        - fw_rulelocalport is undefined or fw_rulelocalport == 'not_found'
+
+    - name: Show variables
+      debug:
+        msg:
+          - "name: {{ fw_rulename }}"
+          - "action: {{ fw_ruleaction }}"
+          - "direction: {{ fw_ruledirection }}"
+          - "enabled: {{ fw_ruleenabled }}"
+          - "profiles: {{ fw_ruleprofiles }}"
+          - "protocol: {{ fw_ruleprotocol }}"
+          - "state: {{ fw_rulestate }}"
+          - "localport: {{ fw_rulelocalport }}"
+          - "localip: {{ fw_rulelocalip }}"
+          - "remoteip: {{ fw_ruleremoteip }}"
+          - "remoteport: {{ fw_ruleremoteport }}"
+          - "program: {{ fw_ruleprogram }}"
+          - "service: {{ fw_ruleservice }}"
+
+    - name: Perform action to configure Firewall Rule
+      block:
+        - name: "Set permission {{ file_prem }} to {{ file_name }}"
+          win_firewall_rule:
+            name: "{{ fw_rulename }}"
+            action: "{{ fw_ruleaction }}"
+            direction: "{{ fw_ruledirection }}"
+            enabled: "{{ fw_ruleenabled }}"
+            profiles: "{{ fw_ruleprofiles | trim }}"
+            protocol: "{{ fw_ruleprotocol | default('any') }}"
+            state: "{{ fw_rulestate }}"
+            localport: "{{ fw_rulelocalport }}"
+            localip: "{{ fw_rulelocalip | default('any') }}"
+            remoteip: "{{ fw_ruleremoteip | default('any') }}"
+            remoteport: "{{ fw_ruleremoteport | default('any') }}"
+            program: "{{ fw_ruleprogram | default('any') }}"
+            service: "{{ fw_ruleservice | default('any') }}"
+          register: fw_rule
+          ignore_errors: true
+
+        - name: "Set facts on error"
+          set_fact:
+            exec_success: false
+            exec_changed: false 
+            exec_rc: 1
+            exec_message: "Failed to configure firewall rule"
+            exec_automation: "sra_config_firewall_rule_windows"
+          when: 
+            - fw_rule.failed
+
+        - name: "Set facts on success - already in desired state"
+          set_fact: 
+            exec_success: true
+            exec_changed: false 
+            exec_rc: 0
+            exec_message: "Firewall Rule already exists"
+            exec_automation: "sra_config_firewall_rule_windows"
+          when: 
+            - not fw_rule.failed
+            - not fw_rule.changed
+
+        - name: "Set facts on success - state changed"
+          set_fact: 
+            exec_success: true
+            exec_changed: true 
+            exec_rc: 0
+            exec_message: "Successfully configured Firewall Rule"
+            exec_automation: "sra_config_firewall_rule_windows"
+          when: 
+            - not fw_rule.failed
+            - fw_rule.changed
+      when: 
+        - exec_rc != 301
+        - exec_rc != 302
+        - exec_rc != 303
+        - exec_rc != 304
+        - exec_rc != 305
+        - exec_rc != 306
+        - exec_rc != 307
+        - exec_rc != 308
+
+    - name: "Configure Firewall Rule Ouput"
+      debug: 
+        msg: "RC: {{ exec_rc }}; {{ exec_message }}; {{ fw_rule.stdout }}"
