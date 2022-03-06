@@ -1,0 +1,218 @@
+---
+- hosts: all:!localhost
+  gather_facts: false
+  tasks:
+    - name: Initialize variables
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 1
+        exec_message: "The initial status didn't change during the execution of
+          the playbook."
+        exec_automation: "sra_manage_service_windows"
+
+    - name: Set facts on error - variable is empty
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 301
+        exec_message: "unknown service_name"
+      when: service_name is undefined or not service_name
+
+    - name: set action properly
+      set_fact:
+        srv_action: "{% if service_action|regex_search('restar',ignorecase=True) %}
+          restarted{% elif service_action|regex_search('stop',ignorecase=True) %}
+          stopped{% elif service_action|regex_search('start',ignorecase=True) %}
+          started{% else %} {{ service_action }} {% endif %}"
+      when: exec_rc != 301 and service_action is defined
+
+    - name: "Set facts on error - invalid action"
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 302
+        exec_message: "unknown service_action"
+      when: 
+        - exec_rc != 301 and service_action is defined
+        - srv_action|trim not in "started|stopped|restarted"
+
+    - name: set mode properly
+      set_fact:
+        srv_mode: "{% if start_mode|regex_search('auto',ignorecase=True) %}
+          auto{% elif start_mode|regex_search('delay',ignorecase=True) %}
+          delayed{% elif start_mode|regex_search('disable',ignorecase=True) %}
+          disabled{% elif start_mode|regex_search('manual',ignorecase=True) %}
+          manual{% else %} {{ start_mode }} {% endif %}"
+      when: exec_rc != 301 and exec_rc != 302 and start_mode is defined
+
+    - name: "Set facts on error - invalid start_mode"
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 303
+        exec_message: "unknown start_mode"
+      when: 
+        - exec_rc != 301 and exec_rc != 302 and start_mode is defined
+        - srv_mode|trim not in "auto|delayed|manual|disabled"
+
+    - name: Populate service facts
+      win_service:
+        name: "{{ service_name }}"
+      register: service_info
+      ignore_errors: true
+      when: exec_rc != 301 and exec_rc != 302 and exec_rc != 303
+
+    - name: "Set facts on error - service not found"
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 304
+        exec_message: "{{ service_name }} service not found on {{ inventory_hostname }}"
+      when: 
+        - service_info.display_name is undefined
+        - exec_rc != 301 and exec_rc != 302 and exec_rc != 303
+
+    - name: Perform action
+      block:
+        - name: Show variables before performing task
+          debug:
+            msg:
+              - "service_action: {{ service_action | default('') }}"
+              - "service_name: {{ service_name }}"
+              - "inventory_hostname: {{ inventory_hostname }}"
+              - "start_mode: {{ start_mode | default('') }}"
+          ignore_errors: true
+      
+        - name: Manage service with state and start_mode
+          win_service:
+            name: "{{ service_name }}"
+            start_mode: "{{ srv_mode|trim }}"
+            state: "{{ srv_action|trim }}"
+          ignore_errors: true
+          register: mng_state_start_output
+          when:
+            - service_action is defined and service_action
+            - start_mode is defined and start_mode
+
+        - name: Manage service with state only
+          win_service:
+            name: "{{ service_name }}"
+            state: "{{ srv_action|trim }}"
+          ignore_errors: true
+          register: mng_state_output
+          when:
+            - service_action is defined and service_action
+            - start_mode is undefined or not start_mode
+
+        - name: Manage service with start_mode only
+          win_service:
+            name: "{{ service_name }}"
+            start_mode: "{{ srv_mode|trim }}"
+          ignore_errors: true
+          register: mng_start_output
+          when:
+            - service_action is undefined or not service_action
+            - start_mode is defined and start_mode
+
+        - name: Set facts on error
+          set_fact:
+            exec_success: false
+            exec_changed: false
+            exec_rc: 1
+            exec_message: "Service: {{ service_name }} - Action: 
+             {{ service_action | default('not defined') }} - Start mode: 
+             {{ start_mode | default('not defined') }} on 
+             {{ inventory_hostname }} - FAILED"
+            exec_automation: "sra_manage_service_windows"
+          when: mng_state_start_output is failed or 
+                mng_state_output is failed or 
+                mng_start_output is failed
+
+        - name: Set facts on success - state and start_mode not changed
+          set_fact:
+            exec_success: true
+            exec_changed: false
+            exec_rc: 0
+            exec_message: "Service: {{ service_name }} is already {{ service_action }} 
+              and already {{ start_mode }} on {{ inventory_hostname }} - SUCCESS"
+            exec_automation: "sra_manage_service_windows"
+          when: 
+            - mng_state_start_output is not skipped
+            - not mng_state_start_output.failed
+            - not mng_state_start_output.changed
+
+        - name: Set facts on success - state and start_mode changed
+          set_fact:
+            exec_success: true
+            exec_changed: true
+            exec_rc: 0
+            exec_message: "Service: {{ service_name }} - Action: {{ service_action }} 
+              - Mode: {{ start_mode }} on {{ inventory_hostname }} - SUCCESS"
+            exec_automation: "sra_manage_service_windows"
+          when: 
+            - mng_state_start_output is not skipped
+            - mng_state_start_output is defined
+            - mng_state_start_output is success
+            - mng_state_start_output.changed
+
+        - name: Set facts on success - state not changed
+          set_fact:
+            exec_success: true
+            exec_changed: false
+            exec_rc: 0
+            exec_message: "Service: {{ service_name }} already {{ service_action }}
+              on {{ inventory_hostname }} - SUCCESS"
+            exec_automation: "sra_manage_service_windows"
+          when: 
+            - mng_state_output is not skipped
+            - not mng_state_output.failed
+            - not mng_state_output.changed
+
+        - name: Set facts on success - state changed
+          set_fact:
+            exec_success: true
+            exec_changed: true
+            exec_rc: 0
+            exec_message: "Service: {{ service_name }} - Action: 
+              {{ service_action }} on {{ inventory_hostname }} - SUCCESS"
+            exec_automation: "sra_manage_service_windows"
+          when: 
+            - mng_state_output is not skipped
+            - mng_state_output is success
+            - mng_state_output.changed
+
+        - name: Set facts on success - start_mode not changed
+          set_fact:
+            exec_success: true
+            exec_changed: false
+            exec_rc: 0
+            exec_message: "Service: {{ service_name }} start_mode already 
+              {{ start_mode }} on {{ inventory_hostname }} - SUCCESS"
+            exec_automation: "sra_manage_service_windows"
+          when: 
+            - mng_start_output is not skipped
+            - not mng_start_output.failed
+            - not mng_start_output.changed
+
+        - name: Set facts on success - start_mode changed
+          set_fact:
+            exec_success: true
+            exec_changed: true
+            exec_rc: 0
+            exec_message: "Service: {{ service_name }} - Mode: {{ start_mode }}
+              on {{ inventory_hostname }} - SUCCESS"
+            exec_automation: "sra_manage_service_windows"
+          when: 
+            - mng_start_output is not skipped
+            - mng_start_output is success
+            - mng_start_output.changed
+      when: 
+        - exec_rc != 301 
+        - exec_rc != 302 
+        - exec_rc != 303 
+        - exec_rc != 304
+
+    - name: "Service: {{ service_name }} - Action: {{ service_action | default('not defined') }} - Mode: {{ start_mode | default('not defined') }}"
+      debug:
+        msg: "RC: {{ exec_rc }}; {{ exec_message }}"

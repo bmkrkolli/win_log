@@ -1,0 +1,135 @@
+---
+# Level 1 Diagnosis for Windows and Linux
+- hosts: "{{ hostvars['localhost']['host_ip'] }}"
+  vars:
+    os_type: "{{ ansible_facts['os_family'] }}"
+  tasks:
+    - name: "Windows Level 1 Diagnosis"
+      win_shell: >-
+        Write-Host "OS:" (gwmi Win32_OperatingSystem).Caption;
+        $cpu=gwmi win32_processor | Measure -property LoadPercentage -Average | %{$_.Average};
+        $MemInfo = gwmi Win32_PerfFormattedData_PerfOS_Memory;
+        $am=$MemInfo.AvailableMBytes;
+        $tm=gwmi Win32_ComputerSystem | %{[Math]::Round($_.TotalPhysicalMemory/1MB)};
+        $um=[Math]::Round(100-(($am/$tm)*100));
+        $pageinfo=gwmi Win32_PageFileUsage;
+        $pct=[Math]::Round(($pageinfo.CurrentUsage/$pageinfo.AllocatedBaseSize)*100,2);
+        $lbt=gwmi win32_operatingsystem | select @{LABEL='LastBootUpTime';
+        EXPRESSION={$_.ConverttoDateTime($_.lastbootuptime)}};
+        Write-Host ";  Last Bootup Time:" $lbt.LastBootUpTime;
+        Write-Host ";  CPU Utilization:" $cpu "%;  RAM Utilization:" $um "%";
+        Write-Host ";  Total RAM(in MB):" $tm ";  Pagefile Utilization:" $pct "%;  Disk Utilization: ";
+        GWMI Win32_LogicalDisk -Filter "DriveType='3'" | 
+        %{Write-Host $_.Name "=>" (100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2)) "%; ";};
+#        $cps=Get-Process | Sort -Descending CPU | Select ID,Name,CPU -first 5;
+#        $mps=Get-Process | Sort -Descending WS | Select ID,Name,WS -first 5;
+#        $syslog=get-eventlog -logname System -entrytype Error -after 
+#        (get-date).addminutes(-60) | Select TimeGenerated,EventID,Message;
+#        Write-Host "`n CPU Top 5 Processes:" $cps "`n Memory Top 5 Processes:" $mps;
+#        Write-host "Network:";cmd /c "ipconfig /all";
+#        Write-host "Errors in Eventlog:";
+#        if($syslog){$syslog;}else{Write-Host "No System Errors in past 1 hour";};
+      changed_when: false
+      register: winl1_info
+      when: os_type == "Windows"
+      ignore_errors: true
+
+    - name: "Linux Level 1 Diagnosis"
+      shell: >-
+        echo "OS:" `uname -a`;
+        echo ";  Last Bootup Time:" `uptime`;
+        echo ";  CPU Utilization:" `which top >/dev/null 2>&1 && 
+        (top -b -n 2 | grep 'Cpu(s)' | tail -n 1 | awk '{print $2}'|
+        awk -F. '{print $1}')||echo top command not installed`;
+        echo "%;  RAM Utilization:" `free | grep Mem | awk '{print $3/$2 * 100.0}'`;
+        echo "%;  SWAP Utilization:" `free | grep 'Swap' | awk '{t = $2; f = $4; print (f/t)}'`;
+        echo "%;  Filesystems:" `df -TPh | awk '{print $7" ""=>"" "$6}' | tr '\n' ';'`;
+#        echo "Performance:";free -m;sar | head -10;
+#        echo "CPU Top 6 Processes:";
+#        ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -6;
+#        echo "Memory Top 6 Processes:";
+#        ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -6;
+#        echo "IO Status:";iostat -m;
+#        echo "VM Status:";vmstat | head -10;
+#        echo "Network:";ifconfig -a;cat /etc/sysconfig/network;
+#        echo "Mounts:";mount;lspci;
+#        echo "Error Logs:";egrep -i "fail|error" /var/log/messages | tail -20;
+#        dmesg|egrep -i "fail|error";
+      changed_when: false
+      register: linuxl1_info
+      when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
+      ignore_errors: true
+
+    - name: "AIX Level 1 Diagnosis"
+      shell: >-
+        echo "";uname -n;uname -a;echo "Last Bootup Time:" `uptime`;
+        echo "Page Info:" `lsps -s`;
+        echo "CPU Top 6 Processes:";
+        ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -6;
+        echo "Memory Top 6 Processes:";
+        ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem | head -6;
+        echo "Filesystems:";df -g;echo "LV State:";lsvg -o| lsvg -il;
+        echo "PV State:";lspv;echo "Performance:";sar | head -10;
+        echo "MultiPath IO:";lspath | head -20;echo "IO Status:";iostat -m;
+        echo "Bootinfo:";bootinfo -b;bootlist -m normal -o;
+        echo "VM Status:";vmstat | head -10;
+        echo "Network:";ifconfig -a;
+        echo "Error Logs:";errpt | tail -30;
+      changed_when: false
+      register: aixl1_info
+      when: (os_type != "Windows" and 'AIX' in os_type)
+      ignore_errors: true
+
+    - name: "Solaris Level 1 Diagnosis"
+      shell: >-
+        echo "";uname -n;uname -a;echo "Last Bootup Time:" `uptime`;
+        echo "CPU Top 6 Processes:";
+        prstat -s cpu | head -6;
+        echo "Memory Top 6 Processes:";
+        prstat -s size | head -6;
+        echo "Filesystems:";df -h;vxdisk list;
+        echo "Performance:";sar | head -30;
+        echo "Faulty FMADM:";fmadm faulty;echo "WWN:";luxadm -e port;
+        echo "ZPool Status:";zpool status -xv;
+        echo "Network:";ifconfig -a;
+        echo "Datalinks:";dladm show-dev;
+      changed_when: false
+      register: soll1_info
+      when: (os_type != "Windows" and 'Solaris' in os_type)
+      ignore_errors: true
+
+    - name: "Set job_msg"
+      set_fact:
+        job_msg: >-
+          {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
+          {{ winl1_info.stdout }}
+        job_rc: Unresolved
+      when: os_type == "Windows"
+      ignore_errors: true
+
+    - name: "Set job_msg"
+      set_fact:
+        job_msg: >-
+          {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
+          {{ linuxl1_info.stdout }}
+        job_rc: Unresolved
+      when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
+      ignore_errors: true
+
+    - name: "Set job_msg"
+      set_fact:
+        job_msg: >-
+          {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
+          {{ aixl1_info.stdout }}
+        job_rc: Unresolved
+      when: (os_type != "Windows" and 'AIX' in os_type)
+      ignore_errors: true
+
+    - name: "Set job_msg"
+      set_fact:
+        job_msg: >-
+          {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
+          {{ soll1_info.stdout }}
+        job_rc: Unresolved
+      when: (os_type != "Windows" and 'Solaris' in os_type)
+      ignore_errors: true
