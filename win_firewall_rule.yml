@@ -192,4 +192,4 @@
 
     - name: "Configure Firewall Rule Ouput"
       debug: 
-        msg: "RC: {{ exec_rc }}; {{ exec_message }}; {{ fw_rule.stdout }}"
+        msg: "RC: {{ exec_rc }}; {{ exec_message }};"
