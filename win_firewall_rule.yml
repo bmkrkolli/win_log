@@ -66,7 +66,7 @@
           Domain{% elif fw_ruledomain and not fw_ruleprivate and not fw_rulepublic %}
           Private{% elif not fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
           Public{% elif not fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
-          {% else %}unkown{% endif %}"
+          {% else %}unknown{% endif %}"
       when: 
         - exec_rc != 301
         - fw_ruledomain is defined and fw_ruleprivate is defined and fw_rulepublic is defined
