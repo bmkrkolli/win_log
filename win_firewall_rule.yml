@@ -112,6 +112,44 @@
         - exec_rc != 301 
         - fw_rulelocalport is undefined or fw_rulelocalport == 'not_found'
 
+    - name: Check Firewall Rule by name
+      win_shell: Get-NetFirewallRule -DisplayName "{{ fw_rulename }}"
+      register: fw_rule_check
+      ignore_errors: true
+      when:
+        - exec_rc != 301
+        - exec_rc != 302
+        - exec_rc != 303
+        - exec_rc != 304
+        - exec_rc != 305
+        - exec_rc != 306
+        - exec_rc != 307
+        - exec_rc != 308    
+
+    - name: Set facts on error - Firewall Rule already exist when action is to create
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 309
+        exec_message: "Firewall Rule with name {{ fw_rulename }} already exists"
+      when: 
+        - exec_rc != 301 and exec != 307 
+        - fw_rulestate == 'present'
+        - fw_rule_check is defined
+        - fw_rule_check.rc == 0
+
+    - name: Set facts on error - Firewall Rule does not exist when action is to remove
+      set_fact:
+        exec_success: false
+        exec_changed: false
+        exec_rc: 310
+        exec_message: "Firewall Rule with name {{ fw_rulename }} does not exists"
+      when: 
+        - exec_rc != 301 and exec != 307 
+        - fw_rulestate == 'absent'
+        - fw_rule_check is defined
+        - fw_rule_check.rc != 0
+
     - name: Show variables
       debug:
         msg:
@@ -147,11 +185,6 @@
             program: "{{ fw_ruleprogram | default('any') }}"
             service: "{{ fw_ruleservice | default('any') }}"
           register: fw_rule
-          ignore_errors: true
-
-        - name: "Configure Firewall Rule"
-          win_shell: Get-NetFirewallRule -DisplayName "{{ fw_rulename }}"
-          register: fw_rule_check
           ignore_errors: true
 
         - name: "Set facts on error"
