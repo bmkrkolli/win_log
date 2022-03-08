@@ -149,6 +149,12 @@
           register: fw_rule
           ignore_errors: true
 
+        - name: "Configure Firewall Rule"
+          win_firewall_rule:
+            name: "{{ fw_rulename }}"
+          register: fw_rule_check
+          ignore_errors: true
+
         - name: "Set facts on error"
           set_fact:
             exec_success: false
