@@ -132,7 +132,7 @@
         exec_rc: 309
         exec_message: "Firewall Rule with name {{ fw_rulename }} already exists"
       when: 
-        - exec_rc != 301 and exec != 307 
+        - exec_rc != 301 and exec_rc != 307 
         - fw_rulestate == 'present'
         - fw_rule_check is defined
         - fw_rule_check.rc == 0
@@ -144,7 +144,7 @@
         exec_rc: 310
         exec_message: "Firewall Rule with name {{ fw_rulename }} does not exists"
       when: 
-        - exec_rc != 301 and exec != 307 
+        - exec_rc != 301 and exec_rc != 307 
         - fw_rulestate == 'absent'
         - fw_rule_check is defined
         - fw_rule_check.rc != 0
