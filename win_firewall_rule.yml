@@ -58,14 +58,14 @@
 
     - name: set profiles properly
       set_fact:
-        fw_ruleprofiles: "{% if fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
-          Domain, Public, Private{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-          Domain, Private{% elif fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
-          Domain, Public{% elif fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-          Public, Private{% elif not fw_ruledomain and fw_ruleprivate and fw_rulepublic %}
-          Domain{% elif fw_ruledomain and not fw_ruleprivate and not fw_rulepublic %}
-          Private{% elif not fw_ruledomain and fw_ruleprivate and not fw_rulepublic %}
-          Public{% elif not fw_ruledomain and not fw_ruleprivate and fw_rulepublic %}
+        fw_ruleprofiles: "{% if fw_ruledomain == 'true' and fw_ruleprivate == 'true' and fw_rulepublic == 'true' %}
+          Domain, Public, Private{% elif fw_ruledomain == 'true' and fw_ruleprivate == 'true' and fw_rulepublic == 'false' %}
+          Domain, Private{% elif fw_ruledomain == 'true' and fw_ruleprivate == 'false' and fw_rulepublic == 'true' %}
+          Domain, Public{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'true' and fw_rulepublic == 'true' %}
+          Public, Private{% elif fw_ruledomain == 'true' and fw_ruleprivate == 'false' and fw_rulepublic == 'false' %}
+          Domain{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'true' and fw_rulepublic == 'false'  %}
+          Private{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'false' and fw_rulepublic == 'true'  %}
+          Public{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'false' and fw_rulepublic == 'false'  %}
           {% else %}unknown{% endif %}"
       when: 
         - exec_rc != 301
@@ -150,8 +150,7 @@
           ignore_errors: true
 
         - name: "Configure Firewall Rule"
-          win_firewall_rule:
-            name: "{{ fw_rulename }}"
+          win_shell: Get-NetFirewallRule -DisplayName "{{ fw_rulename }}"
           register: fw_rule_check
           ignore_errors: true
 
