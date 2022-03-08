@@ -226,6 +226,8 @@
         - exec_rc != 306
         - exec_rc != 307
         - exec_rc != 308
+        - exec_rc != 309
+        - exec_rc != 310
 
     - name: "Configure Firewall Rule Ouput"
       debug: 
