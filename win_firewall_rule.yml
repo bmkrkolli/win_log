@@ -63,10 +63,9 @@
           Domain, Private{% elif fw_ruledomain == 'true' and fw_ruleprivate == 'false' and fw_rulepublic == 'true' %}
           Domain, Public{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'true' and fw_rulepublic == 'true' %}
           Public, Private{% elif fw_ruledomain == 'true' and fw_ruleprivate == 'false' and fw_rulepublic == 'false' %}
-          Domain{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'true' and fw_rulepublic == 'false'  %}
-          Private{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'false' and fw_rulepublic == 'true'  %}
-          Public{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'false' and fw_rulepublic == 'false'  %}
-          {% else %}unknown{% endif %}"
+          Domain{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'true' and fw_rulepublic == 'false' %}
+          Private{% elif fw_ruledomain == 'false' and fw_ruleprivate == 'false' and fw_rulepublic == 'true' %}
+          Public{% else %}unknown{% endif %}"
       when: 
         - exec_rc != 301
         - fw_ruledomain is defined and fw_ruleprivate is defined and fw_rulepublic is defined
