@@ -4,11 +4,10 @@
   vars:
     os_type: "{{ ansible_facts['os_family'] }}"
   tasks:
-    - name: "Windows Level 1 Diagnosis"
+    - name: "Level 1 Diagnosis"
       l1diag: 
       changed_when: false
       register: l1_info
-      when: os_type == "Windows"
       ignore_errors: true
 
     - name: "Windows Level 1 Diagnosis"
