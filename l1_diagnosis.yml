@@ -41,6 +41,15 @@
       ignore_errors: true
 
     - name: "Linux Level 1 Diagnosis"
+      lidiagux:
+      changed_when: false
+      register: linl1_info
+      when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
+      ignore_errors: true
+
+
+
+    - name: "Linux Level 1 Diagnosis"
       shell: >-
         echo "OS:" `uname -a`;
         echo ";  Last Bootup Time:" `uptime`;
