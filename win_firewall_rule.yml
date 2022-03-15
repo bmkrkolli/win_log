@@ -70,15 +70,6 @@
         - exec_rc != 301
         - fw_ruledomain is defined and fw_ruleprivate is defined and fw_rulepublic is defined
 
-    - name: set profiles properly - switch
-      set_fact:
-        fw_ruledirect: "{% switch fw_ruledirection %}
-          {% case 'in' %}Direction is Inwards
-          {% case 'out' %}Direction is Outwards
-          {% else %}Direction is Unknown{% endswitch %}"
-      when: 
-        - exec_rc != 301
-
     - name: Set facts on error - profile is empty
       set_fact:
         exec_success: false
