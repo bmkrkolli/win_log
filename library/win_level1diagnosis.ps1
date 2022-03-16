@@ -15,7 +15,7 @@ try {
     $um = [Math]::Round(100-(($am/$tm)*100));
     $pageinfo = get-wmiobject Win32_PageFileUsage;
     $pct = [Math]::Round(($pageinfo.CurrentUsage/$pageinfo.AllocatedBaseSize)*100,2);
-    $dsk = GWMI Win32_LogicalDisk -Filter "DriveType='3'" | Select Name, @{LABEL='Used'; EXPRESSION={(100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2))}};
+    $dsk = get-wmiobject Win32_LogicalDisk -Filter "DriveType='3'" | Select Name, @{LABEL='Used'; EXPRESSION={(100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2))}};
     $l1 = New-Object psobject -Property @{Host = $os.CSName; OS = $os.Caption; OSArchitecture = $os.OSArchitecture;
         LastBootUpTime = ($lbt.DateTime).replace(",",""); Cores = $cores.NumberOfProcessors; CPULoad = $cpu; Memory = $tm; MemoryLoad = $um; 
         LogicalProcessors = $cores.NumberOfLogicalProcessors; PageFileLoad = $pct; DiskLoad = $dsk; }; 
@@ -27,7 +27,7 @@ try {
         rc = 0
         stderr = ""
         stdout = $l1
-        stdout_lines = $l1 | ConvertTo-Json
+        stdout_lines = $l1
     }
 }
 catch {
