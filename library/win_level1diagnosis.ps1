@@ -25,20 +25,23 @@ try {
     $result = @{
         failed = $false
         changed = $false
+        msg = ""
         rc = 0
-        stdout = $l1 | ConvertTo-Json;
+        stderr = ""
+        stdout = $l1
+        stdout_lines = $l1 | ConvertTo-Json
     }
 }
 catch {
-
     $result = @{
         failed = $true
         changed = $false
-        msg = "Failed to get Level 1 Diagnosis Information"
+        msg = "Failed to Get Level 1 Diagnosis Information"
         rc = 1
-        stderr = $PSItem    
+        stderr = $PSItem
+        stdout = ""
+        stdout_lines = ""
     }
-
 }
 
 Exit-Json $result;
