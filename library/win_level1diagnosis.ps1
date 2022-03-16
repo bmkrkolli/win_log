@@ -8,18 +8,25 @@ try {
     $os = get-wmiobject Win32_OperatingSystem;
     $lbt = $os.ConverttoDateTime($os.LastBootupTime);
     $cpu = get-wmiobject win32_processor | Measure -property LoadPercentage -Average | %{$_.Average};
-    $MemInfo = get-wmiobject Win32_PerfFormattedData_PerfOS_Memory; $am=$MemInfo.AvailableMBytes;
+    $MemInfo = get-wmiobject Win32_PerfFormattedData_PerfOS_Memory; 
+    $am = $MemInfo.AvailableMBytes;
     $tm = get-wmiobject Win32_ComputerSystem | %{[Math]::Round($_.TotalPhysicalMemory/1MB)};
     $um = [Math]::Round(100-(($am/$tm)*100));
-    $pageinfo=get-wmiobject Win32_PageFileUsage;
-    $pct=[Math]::Round(($pageinfo.CurrentUsage/$pageinfo.AllocatedBaseSize)*100,2);
-    $dsk="";get-wmiobject Win32_LogicalDisk -Filter "DriveType='3'" | %{$d=$_.Name;$dsk+="[Drive:" +$d.substring(0,1)+"; Used:"+(100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2))+"],";};
+    $pageinfo = get-wmiobject Win32_PageFileUsage;
+    $pct = [Math]::Round(($pageinfo.CurrentUsage/$pageinfo.AllocatedBaseSize)*100,2);
+    $dsk = ""; get-wmiobject Win32_LogicalDisk -Filter "DriveType='3'" | %{
+        $d=$_.Name;
+        $dsk+="[Drive:" +$d.substring(0,1)+"; Used:"+(100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2))+"],";
+    };
+    $l1 = New-Object psobject -Property @{Host = $os.CSName; OS = $os.Caption; 
+        LastBootUpTime = ($lbt.DateTime).replace(",",""); CPULoad = $cpu; MemoryLoad = $um; 
+        PageFileLoad = $pct; DiskLoad = $dsk; }; 
 
     $result = @{
         failed = $false
         changed = $false
         rc = 0
-        stdout = "Host:" + $os.CSName + ", OS:" + $os.Caption + ", Kernel:" + $os.Version + ", LastBootUpTime:" + ($lbt.DateTime).replace(",","") + ", CPULoad:" + $cpu + ", MemoryLoad:" + $um + ", PageFileLoad:" + $pct + ", DiskLoad:" + $dsk ;   
+        stdout = $l1 | ConvertTo-Json;
     }
 }
 catch {

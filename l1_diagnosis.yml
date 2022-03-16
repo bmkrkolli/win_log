@@ -10,14 +10,14 @@
       register: pyl1_info
       ignore_errors: true
 
-    - name: "Powershell Level 1 Diagnosis"
-      win_l1diag: 
+    - name: "win_level1diagnosis Level 1 Diagnosis"
+      win_level1diagnosis: 
       changed_when: false
-      register: l1_info
+      register: win_l1_info
       when: os_type == "Windows"
       ignore_errors: true
 
-    - name: "Windows Level 1 Diagnosis"
+    - name: "Powershell Level 1 Diagnosis"
       win_shell: >-
         Write-Host "OS:" (gwmi Win32_OperatingSystem).Caption;
         $cpu=gwmi win32_processor | Measure -property LoadPercentage -Average | %{$_.Average};
