@@ -6,7 +6,6 @@
   tasks:
     - name: "Python Level 1 Diagnosis"
       l1diag:
-      changed_when: false
       register: pyl1_info
       ignore_errors: true
 
@@ -39,14 +38,13 @@
       when: os_type == "Windows"
       ignore_errors: true
 
-    - name: "Shell Level 1 Diagnosis"
+    - name: "level1diagnosis Level 1 Diagnosis"
       level1diagnosis:
-      changed_when: false
-      register: uxl1_info
-      when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
-      ignore_errors: true
+      register: linux_l1_info
+      when: os_type != "Windows"
 
-    - name: "Linux Level 1 Diagnosis"
+
+    - name: "Shell Level 1 Diagnosis"
       shell: >-
         echo "OS:" `uname -a`;
         echo ";  Last Bootup Time:" `uptime`;
