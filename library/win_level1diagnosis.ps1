@@ -28,7 +28,7 @@ try {
         rc = 0
         stderr = ""
         stdout = $l1
-        stdout_lines = $l1
+        stdout_lines = $l1 | fl;
     }
 }
 catch {
