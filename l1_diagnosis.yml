@@ -16,54 +16,17 @@
       when: os_type == "Windows"
       ignore_errors: true
 
-    - name: "Powershell Level 1 Diagnosis"
-      win_shell: >-
-        Write-Host "OS:" (gwmi Win32_OperatingSystem).Caption;
-        $cpu=gwmi win32_processor | Measure -property LoadPercentage -Average | %{$_.Average};
-        $MemInfo = gwmi Win32_PerfFormattedData_PerfOS_Memory;
-        $am=$MemInfo.AvailableMBytes;
-        $tm=gwmi Win32_ComputerSystem | %{[Math]::Round($_.TotalPhysicalMemory/1MB)};
-        $um=[Math]::Round(100-(($am/$tm)*100));
-        $pageinfo=gwmi Win32_PageFileUsage;
-        $pct=[Math]::Round(($pageinfo.CurrentUsage/$pageinfo.AllocatedBaseSize)*100,2);
-        $lbt=gwmi win32_operatingsystem | select @{LABEL='LastBootUpTime';
-        EXPRESSION={$_.ConverttoDateTime($_.lastbootuptime)}};
-        Write-Host ";  Last Bootup Time:" $lbt.LastBootUpTime;
-        Write-Host ";  CPU Utilization:" $cpu "%;  RAM Utilization:" $um "%";
-        Write-Host ";  Total RAM(in MB):" $tm ";  Pagefile Utilization:" $pct "%;  Disk Utilization: ";
-        GWMI Win32_LogicalDisk -Filter "DriveType='3'" | 
-        %{Write-Host $_.Name "=>" (100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2)) "%; ";};
-      changed_when: false
-      register: winl1_info
-      when: os_type == "Windows"
-      ignore_errors: true
-
     - name: "level1diagnosis Level 1 Diagnosis"
       level1diagnosis:
       register: linux_l1_info
       when: os_type != "Windows"
       ignore_errors: true
 
-    - name: "Shell Level 1 Diagnosis"
-      shell: >-
-        echo "OS:" `uname -a`;
-        echo ";  Last Bootup Time:" `uptime`;
-        echo ";  CPU Utilization:" `which top >/dev/null 2>&1 && 
-        (top -b -n 2 | grep 'Cpu(s)' | tail -n 1 | awk '{print $2}'|
-        awk -F. '{print $1}')||echo top command not installed`;
-        echo "%;  RAM Utilization:" `free | grep Mem | awk '{print $3/$2 * 100.0}'`;
-        echo "%;  SWAP Utilization:" `free | grep 'Swap' | awk '{t = $2; f = $4; print (f/t)}'`;
-        echo "%;  Filesystems:" `df -TPh | awk '{print $7" ""=>"" "$6}' | tr '\n' ';'`;
-      changed_when: false
-      register: linuxl1_info
-      when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
-      ignore_errors: true
-
     - name: "Set job_msg"
       set_fact:
         job_msg: >-
           {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
-          {{ winl1_info.stdout }}
+          {{ win_l1_info.stdout }}
         job_rc: Unresolved
       when: os_type == "Windows"
       ignore_errors: true
@@ -72,7 +35,7 @@
       set_fact:
         job_msg: >-
           {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
-          {{ linuxl1_info.stdout }}
+          {{ linux_l1_info.stdout }}
         job_rc: Unresolved
-      when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
+      when: os_type != "Windows"
       ignore_errors: true

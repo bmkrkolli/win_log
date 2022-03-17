@@ -27,6 +27,7 @@ try {
         msg = ""
         rc = 0
         stderr = ""
+        stderr_lines = ""
         stdout = $l1
         stdout_lines = $l1
     }
@@ -38,6 +39,7 @@ catch {
         msg = "Failed to Get Level 1 Diagnosis Information"
         rc = 1
         stderr = $PSItem
+        stderr_lines = $PSItem
         stdout = ""
         stdout_lines = ""
     }
