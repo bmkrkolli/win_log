@@ -15,10 +15,10 @@ try {
     $pageinfo = get-wmiobject Win32_PageFileUsage;
     $pct = [Math]::Round(($pageinfo.CurrentUsage/$pageinfo.AllocatedBaseSize)*100,2);
     $dsk = get-wmiobject Win32_LogicalDisk -Filter "DriveType='3'" | Select Name, @{LABEL='UsedPercent'; EXPRESSION={(100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2))}};
-    $l1 = New-Object psobject -Property @{Host = $os.CSName; OS = $os.Caption; OSArchitecture = $os.OSArchitecture;
+    $l1 = New-Object psobject -Property [@{Host = $os.CSName; OS = $os.Caption; OSArchitecture = $os.OSArchitecture;
         LastBootUpTime = ($lbt.DateTime).replace(",",""); Cores = $cores.NumberOfProcessors; CPULoadPercent = $cpu; 
         MemoryMB = $tm; MemoryLoadPercent = $um; LogicalProcessors = $cores.NumberOfLogicalProcessors; 
-        PageFileLoadPercent = $pct; DiskLoad = $dsk }; 
+        PageFileLoadPercent = $pct; DiskLoad = $dsk }]; 
     
     $result = @{
         failed = $false
