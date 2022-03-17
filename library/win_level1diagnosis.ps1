@@ -18,7 +18,7 @@ try {
     $l1 = New-Object psobject -Property @{Host = $os.CSName; OS = $os.Caption; OSArchitecture = $os.OSArchitecture;
         LastBootUpTime = ($lbt.DateTime).replace(",",""); Cores = $cores.NumberOfProcessors; CPULoadPercent = $cpu; 
         MemoryMB = $tm; MemoryLoadPercent = $um; LogicalProcessors = $cores.NumberOfLogicalProcessors; 
-        PageFileLoadPercent = $pct; DiskLoad = $dsk; }; 
+        PageFileLoadPercent = $pct; DiskLoad = $dsk }; 
     
     $result = @{
         failed = $false
@@ -28,7 +28,7 @@ try {
         stderr = ""
         stderr_lines = ""
         stdout = $l1
-        stdout_lines = $l1 | ConvertTo-Json -AsArray
+        stdout_lines = $l1
     }
 }
 catch {
