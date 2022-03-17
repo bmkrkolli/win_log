@@ -19,6 +19,7 @@ try {
         LastBootUpTime = ($lbt.DateTime).replace(",",""); Cores = $cores.NumberOfProcessors; CPULoadPercent = $cpu; 
         MemoryMB = $tm; MemoryLoadPercent = $um; LogicalProcessors = $cores.NumberOfLogicalProcessors; 
         PageFileLoadPercent = $pct; DiskLoad = $dsk; }; 
+    $stdoutput = "[{`"Hostname`": `""+$os.CSName+"`",`"OS`": `""+$os.Caption+"`",`"OSArchitecture`": `""+$os.OSArchitecture+"`",`"LastBootUpTime`": `""+($lbt.DateTime).replace(",","")+"`",`"Cores`": `""+$cores.NumberOfProcessors+"`",`"CPULoadPercent`": `""+$cpu+"`",`"MemoryLoadPercent`": `""+$um+"`",`"MemoryMB`": `""+$tm+"`",`"PageFileLoadPercent`": `""+$pct+"`"}]"
 
     $result = @{
         failed = $false
@@ -27,8 +28,8 @@ try {
         rc = 0
         stderr = ""
         stderr_lines = ""
-        stdout = $l1
-        stdout_lines = $l1 | ConvertTo-Json
+        stdout = $stdoutput
+        stdout_lines = $l1
     }
 }
 catch {
