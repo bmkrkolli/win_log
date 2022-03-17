@@ -40,7 +40,7 @@
       ignore_errors: true
 
     - name: "Shell Level 1 Diagnosis"
-      ux_l1diag:
+      level1diagnosis:
       changed_when: false
       register: uxl1_info
       when: (os_type != "Windows" and 'AIX' not in os_type and 'Solaris' not in os_type)
