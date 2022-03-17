@@ -27,8 +27,8 @@ try {
         rc = 0
         stderr = ""
         stderr_lines = ""
-        stdout = "["+$l1+"]"
-        stdout_lines = "["+$l1+"]"
+        stdout = $l1
+        stdout_lines = $l1 | ConvertTo-Json
     }
 }
 catch {
