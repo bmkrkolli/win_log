@@ -14,9 +14,9 @@ STDOUTPUT="\"Hostname\": \""$HN"\", \"OS\": \""$OS"\", \"Kernel\": \""$KERNEL"\"
 ER="not found"
 if [[ $STDOUTPUT =~ $ER ]];
 then
-    echo "{ \"changed\": false, \"failed\": true, \"rc\": 1, \"msg\": \"\", \"stderr\": {"$stdoutput"}, \"stdout\": \"\" }"
+    echo "{ \"changed\": false, \"failed\": true, \"rc\": 1, \"msg\": \"\", \"stderr\": {"$STDOUTPUT"}, \"stdout\": \"\" }"
     exit 1
 else
-    echo "{ \"changed\": false, \"failed\": false, \"rc\": 0, \"msg\": \"\", \"stderr\": \"\", \"stdout\": {"$stdoutput"} }"
+    echo "{ \"changed\": false, \"failed\": false, \"rc\": 0, \"msg\": \"\", \"stderr\": \"\", \"stdout\": {"$STDOUTPUT"} }"
     exit 0
 fi
