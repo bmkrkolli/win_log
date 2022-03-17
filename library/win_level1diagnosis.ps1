@@ -18,7 +18,7 @@ try {
     $dsk = get-wmiobject Win32_LogicalDisk -Filter "DriveType='3'" | Select Name, @{LABEL='UsedPercent'; EXPRESSION={(100 - [Math]::Round(($_.FreeSpace/$_.Size)*100, 2))}};
     $l1 = New-Object psobject -Property @{Host = $os.CSName; OS = $os.Caption; OSArchitecture = $os.OSArchitecture;
         LastBootUpTime = ($lbt.DateTime).replace(",",""); Cores = $cores.NumberOfProcessors; CPULoadPercent = $cpu; 
-        Memory = $tm; MemoryLoadPercent = $um; LogicalProcessors = $cores.NumberOfLogicalProcessors; 
+        MemoryMB = $tm; MemoryLoadPercent = $um; LogicalProcessors = $cores.NumberOfLogicalProcessors; 
         PageFileLoadPercent = $pct; DiskLoad = $dsk; }; 
 
     $result = @{

@@ -14,9 +14,9 @@ STDOUTPUT="Hostname: "$HN", OS: "$OS", Kernel: "$KERNEL", LastBootUpTime:"$LBT",
 ER="not found"
 if [[ $STDOUTPUT =~ $ER ]];
 then
-    printf '{ "changed": false, "failed": true, "rc": 1, "msg": "", "stderr": %s, "stdout": "" }' "$STDOUTPUT"
+    printf '{ "changed": false, "failed": true, "rc": 1, "msg": "", "stderr": { %s }, "stdout": "" }' "$STDOUTPUT"
     exit 1
 else
-    printf '{ "changed": false, "failed": false, "rc": 0, "msg": "", "stderr": "", "stdout": %s }' "$STDOUTPUT"
+    printf '{ "changed": false, "failed": false, "rc": 0, "msg": "", "stderr": "", "stdout": { %s } }' "$STDOUTPUT"
     exit 0
 fi
