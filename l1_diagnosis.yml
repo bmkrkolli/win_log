@@ -42,7 +42,7 @@
       level1diagnosis:
       register: linux_l1_info
       when: os_type != "Windows"
-
+      ignore_errors: true
 
     - name: "Shell Level 1 Diagnosis"
       shell: >-

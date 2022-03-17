@@ -10,4 +10,4 @@ SWAP=$(free | grep 'Swap' | awk '{t = $2; f = $4; print (f/t)}'||echo 'free comm
 FS=$(df -TPh -x squashfs -x tmpfs -x devtmpfs | awk 'BEGIN {ORS=","} NR>1{print "[Mount:"$7", UsedPercent:"$6"]"}'||echo 'df command not found')
 
 STDOUTPUT="Hostname: "$HN", OS: "$OS", Kernel: "$KERNEL", LastBootUpTime:"$LBT", CPULoadPercent: "$CPU", MemoryLoadPercent: "$MEM", SWAPLoadPercent: "$SWAP", Filesystems: "$FS
-echo "{ \"changed\": false, \"failed\": false, \"rc\": 0, \"msg\": \"\", \"stderr\": \"\", \"stdout\": \"$STDOUTPUT\" }"
+printf '{ "changed": false, "failed": false, "rc": 0, "msg": "", "stderr": "", "stdout": %s }' "$STDOUTPUT"
