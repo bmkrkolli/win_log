@@ -19,7 +19,7 @@ try {
     $l1 = New-Object psobject -Property @{Host = $os.CSName; OS = $os.Caption; OSArchitecture = $os.OSArchitecture;
         LastBootUpTime = ($lbt.DateTime).replace(",",""); Cores = $cores.NumberOfProcessors; CPULoadPercent = $cpu; 
         Memory = $tm; MemoryLoadPercent = $um; LogicalProcessors = $cores.NumberOfLogicalProcessors; 
-        PageFileLoad = $pct; DiskLoad = $dsk; }; 
+        PageFileLoadPercent = $pct; DiskLoad = $dsk; }; 
 
     $result = @{
         failed = $false
@@ -28,7 +28,7 @@ try {
         rc = 0
         stderr = ""
         stdout = $l1
-        stdout_lines = $l1 | fl;
+        stdout_lines = $l1
     }
 }
 catch {
