@@ -25,7 +25,7 @@
     - name: "Set job_msg"
       set_fact:
         job_msg: >-
-          {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
+          {{ os_type }} Level 1 Diagnosis for {{ inventory_hostname }}
           {{ win_l1_info.stdout }}
         job_rc: Unresolved
       when: os_type == "Windows"
@@ -34,7 +34,7 @@
     - name: "Set job_msg"
       set_fact:
         job_msg: >-
-          {{ os_type }} Level 1 Diagnosis for {{ hostvars['localhost']['host_ip'] }}
+          {{ os_type }} Level 1 Diagnosis for {{ inventory_hostname }}
           {{ linux_l1_info.stdout }}
         job_rc: Unresolved
       when: os_type != "Windows"
