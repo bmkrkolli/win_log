@@ -1,14 +1,10 @@
 ---
 - hosts: localhost
-  collections:
-    - community.zabbix
-  tasks:
-    - name: zabbix inventory
-      zabbix_inventory:
-        server_url: http://8.9.9.22:8080/
-        login_user: admin
-        login_password: admin@1234
-        host_zapi_query:
-          selectInventory: ['name']
-          selectInterfaces: ['name']
-        validate_certs: false
+  plugin: community.zabbix.zabbix_inventory
+  server_url: http://8.9.9.22:8080/
+  login_user: admin
+  login_password: admin@1234
+  host_zapi_query:
+    selectInventory: ['name']
+    selectInterfaces: ['name']
+  validate_certs: false
