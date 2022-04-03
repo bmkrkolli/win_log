@@ -25,21 +25,21 @@
     - name: Able to reach Node
       set_fact:
         host_reachable: true
-        job_msg: "Success, {{ inventory_hostname }} is reachable"
+        job_msg: "{{ inventory_hostname }} is reachable;"
       when: raw_result.rc == 0    
       ignore_errors: true
 
     - name: Unable to reach Node
       set_fact:
         host_reachable: false
-        job_msg: "Failed, {{ inventory_hostname }} is not reachable, Incorrect credentials"
+        job_msg: "{{ inventory_hostname }} is not reachable[Incorrect credentials];"
       when: raw_result.unreachable is defined and ('password' in raw_result.msg or 'credentials' in raw_result.msg)
       ignore_errors: true
 
     - name: Unable to reach Node
       set_fact:
         host_reachable: false
-        job_msg: "Failed, {{ inventory_hostname }} is not reachable, Network Issue"
+        job_msg: "{{ inventory_hostname }} is not reachable[Network Issue];"
       when: raw_result.unreachable is defined and ('port' in raw_result.msg)
       ignore_errors: true
 
@@ -60,5 +60,5 @@
     - name: stats
       set_stats: 
         data:
-          csvformat: "{{ job_msg }}"
+          status: "{{ job_msg }}"
       ignore_errors: true

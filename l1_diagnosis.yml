@@ -5,7 +5,7 @@
     os_type: "{{ ansible_facts['os_family'] }}"
   tasks:
     - name: "Python Level 1 Diagnosis"
-      l1diag:
+      healthcheck:
       register: pyl1_info
       ignore_errors: true
 
