@@ -4,7 +4,7 @@
   gather_facts: false
   tasks:
   - name: get PID.
-    shell: "ps aux | pgrep -i java | awk  -F '[ ]*' '{print $2}'"
+    shell: "ps aux | head -2 | awk  -F '[ ]*' '{print $2}'"
     register: pid
   - debug:
      var: pid.stdout
