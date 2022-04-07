@@ -12,4 +12,4 @@
   - debug:
       msg: "{{ pids }}"
   - debug:
-      msg: "{{ pids | json_query([?'ProcessID']) }}"
+      msg: "{{ pids | to_yaml }}"
