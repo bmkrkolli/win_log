@@ -10,4 +10,4 @@
   - set_fact:
       pids: "{{ pid.stdout | to_json }}"
   - debug:
-      msg: "{{ pids[*].ProcessID }}"
+      msg: "{{ pids | from_json | community.general.json_query('ProcessID') }}"
