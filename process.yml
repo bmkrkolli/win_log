@@ -4,7 +4,8 @@
   gather_facts: false
   tasks:
   - name: get PID.
-    shell: ps aux | head -4 | awk '{print "{\"ProcessID\":\""$2"\", \"CMD\":\""$11"\", \"User\":\""$1"\"}"}'
+    shell: >-
+      P=$(ps aux | grep -i jira | pgrep -i java | awk 'BEGIN {ORS=","} NR>1{print "{\"ProcessID\":\""$2"\", \"CMD\":\""$11"\", \"User\":\""$1"\"}"}'); echo "\"Processes\": ["${P::-1}"]"
     register: pid
   - debug:
      var: pid.stdout
