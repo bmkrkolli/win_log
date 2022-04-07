@@ -17,7 +17,7 @@
 
     - debug: 
         msg: |
-          Environment Variables ("environment"): {{ env }} 
+          Environment Variables ("environment"): {{ environment }} 
 
     - debug: 
         msg: |
