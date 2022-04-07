@@ -6,5 +6,7 @@
   - name: show all the hosts matching the pattern, i.e. all but the group www
     debug:
       msg: "{{ item }}"
+    delegate_to: localhost
+    run_once: true
     with_inventory_hostnames:
       - all
