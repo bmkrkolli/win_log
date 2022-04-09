@@ -5,15 +5,23 @@
   tasks:
     - name: show all the hosts matching the pattern, i.e. all but the group www
       debug:
-        msg: "{{ item }}"
+        msg: "{{ hostvars }}"
       delegate_to: localhost
       run_once: true
       with_inventory_hostnames:
         - all
 
+    - set_fact:
+        my_hosts: |
+          {
+            {% for a_host in hostvars | dict2items %}
+              "{{ a_host.ip }}": "{{ a_host.value.ansible_host }}",
+            % endfor %}
+          }
+
     - debug: 
         msg: |
-          GROUPS Variables ("groups"): {{ groups }}
+          GROUPS Variables ("groups"): {{ my_hosts }}
 
     - debug: 
         msg: |
