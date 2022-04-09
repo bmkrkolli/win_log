@@ -5,8 +5,11 @@
   tasks:
     - name: show all the hosts matching the pattern, i.e. all but the group www
       debug:
-        msg: "{{ item }} , {{ hostvars[item]['inventory_hostname']  }} , {{ hostvars[item]['ansible_host'] | default('not_found') }}"
-#        msg: "{{ item }} , {{ hostvars[item][inventory_hostname] }} , {{ hostvars[item][ansible_host] | default('not_found') }} , {{ hostvars[item][ansible_ssh_host] | default('not_found') }} , {{ hostvars[item][group_names] }} , {{ hostvars[item][awx_inventory_id] }} , {{ hostvars[item][tower_inventory_id] }}"
+        msg: "{{ item }} , {{ hostvars[item]['inventory_hostname']  }} , 
+         {{ hostvars[item]['ansible_host'] | default('not_found') }} ,
+         {{ hostvars[item]['ansible_ssh_host'] | default('not_found') }} , 
+         {{ hostvars[item]['fqdn'] | default('not_found') }} , {{ hostvars[item]['group_names'] }} , 
+         {{ hostvars[item]['awx_inventory_id'] }} , {{ hostvars[item]['tower_inventory_id'] }}"
       delegate_to: localhost
       run_once: true
       with_inventory_hostnames:
