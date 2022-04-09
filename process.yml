@@ -13,18 +13,6 @@
 
     - debug: 
         msg: |
-          Module Variables ("vars"): {{ vars }} 
-
-    - debug: 
-        msg: |
-          Environment Variables ("environment"): {{ environment }} 
-
-    - debug: 
-        msg: |
-          GROUP NAMES Variables ("group_names"): {{ group_names }}
-
-    - debug: 
-        msg: |
           GROUPS Variables ("groups"): {{ groups }}
 
     - debug: 
