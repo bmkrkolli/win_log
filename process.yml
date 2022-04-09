@@ -5,7 +5,8 @@
   tasks:
     - name: show all the hosts matching the pattern, i.e. all but the group www
       debug:
-        msg: "{{ item }} , {{ hostvars[item][inventory_hostname] }} , 
+        msg: |
+         "{{ item }} , {{ hostvars[item][inventory_hostname] }} , 
          {{ hostvars[item][ansible_host] | | default('not_found') }} , 
          {{ hostvars[item][ansible_ssh_host] | default('not_found') }} , 
          {{ hostvars[item][fqdn] | default('not_found') }} ,
