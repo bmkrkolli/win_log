@@ -2,6 +2,23 @@
 - name: Generate treaddump.
   hosts: all
   gather_facts: false
+  vars:
+    repoList:
+      - CentOS-Base.repo
+      - CentOS-Debuginfo.repo
+      - CentOS-Media.repo
+      - CentOS-Vault.repo
+      - epel.repo
+      - CentOS-CR.repo
+      - CentOS-fasttrack.repo
+      - CentOS-Sources.repo
+      - CentOS-x86_64-kernel.repo
+      - epel-testing.repo
+      - CentOS-SCLo-scl.repo
+      - CentOS-SCLo-scl-rh.repo
+      - CentOS-SCLo-scl-rh.repo.rpmnew
+    reposPresent: []
+    enable: 0
   tasks:
     - name: show all the hosts matching the pattern, i.e. all but the group www
       debug:
@@ -14,3 +31,22 @@
       run_once: true
       with_inventory_hostnames:
         - all
+
+    - name: Check if path exists
+      stat:
+        path: /etc/yum.repos.d/{{ item }}
+      register: outcome
+      with_items: "{{ repoList }}"
+
+    - name: DEBUG Show outcome
+      debug:
+        msg: "{{ outcome }}"
+
+    - name: DEBUG Show results
+      debug:
+        msg: "{{ outcome.results }}"
+
+    - name: DEBUG  Indexes
+      debug:
+        msg: "{{ results.stat.exists }}"
+      with_items: "{{ outcome }}"
