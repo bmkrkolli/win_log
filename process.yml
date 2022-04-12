@@ -48,5 +48,5 @@
 
     - name: DEBUG  Indexes
       debug:
-        msg: "{{ results.stat.exists }}"
+        msg: "{{ item.stat.exists }}"
       with_items: "{{ outcome }}"
