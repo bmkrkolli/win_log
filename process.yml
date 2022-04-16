@@ -50,3 +50,10 @@
       debug:
         msg: "{{ item.stat.exists }}"
       with_items: "{{ outcome.results }}"
+
+    - name: Log lines to MS Teams
+      uri:
+        url: https://teams.live.com/l/invite/FEA72ZSD-HanB3IBgE
+        body: "Sample Testing"
+        body_format: json
+        method: POST
