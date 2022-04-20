@@ -1,14 +1,12 @@
 ---
 - hosts: all
   gather_facts: false
+  vars:
+    was_home: 'c:\temp'
   tasks:
     - name: Share folders
-      win_shell: GWMI -class Win32_Share
+      win_path:
+        elements: "{{ was_home }}"
 
-    - name: win_share
-      win_share: 
-        name: Utils
-        path: C:\Utils
-        state: present
-        list: yes
-        full: Administrators
+    - debug:
+        msg: "{{ was_home }}"
