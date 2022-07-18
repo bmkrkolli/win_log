@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Pass variables to role
+      include_role:
+        name: var_test
+      vars:
+        account: "{{ item.account }}"
+        repo_name: "{{ item.repo_name }}"
+        client_org: "{{ item.client_org }}"
+        tower_org: "{{ item.tower_org }}"
+      with_items: "{{ items }}"

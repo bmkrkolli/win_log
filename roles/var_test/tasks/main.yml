@@ -1,0 +1,14 @@
+---
+- name: Set Defaul facts
+  set_fact:
+    r_account: "{{ account }}"
+    r_repo_name: "{{ repo_name }}"
+    r_client_org: "{{ client_org }}"
+    r_tower_org: "{{ tower_org }}"
+  
+- debug:
+    msg:
+      - "Account: {{ r_account }}"
+      - "Repo: {{ r_repo_name }}"
+      - "Client Org: {{ r_client_org }}"
+      - "Tower Org: {{ r_tower_org }}"
